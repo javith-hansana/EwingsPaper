@@ -1,0 +1,1396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Form Submission</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="form-style.css">
+    <style>
+    </style>
+</head>
+<body>
+    <!-- Progress bar -->
+    <div class="progress-container">
+        <div class="progress-bar" id="formProgress"></div>
+    </div>
+
+    <div class="container">
+        <!-- Banner Section -->
+        <div class="banner mb-4">
+            <div class="banner-image">
+                <img src="Ukuwela-sir-banner.png" alt="Education Banner" class="img-fluid rounded">
+            </div>
+        </div>
+
+        <div class="header text-center mb-4">
+            <h1 id="formTitle">Loading Form...</h1>
+            <p class="mb-0" id="formDescription"></p>
+            <button id="themeToggle" class="theme-toggle btn btn-sm btn-outline-secondary mt-2">
+                <i class="fas fa-moon"></i> Toggle Theme
+            </button>
+            <div id="userInfo" class="text-end mb-3" style="display: none;">
+                Logged in as: <span id="userEmail"></span>
+            </div>
+        </div>
+
+        <!-- Form Container -->
+        <div class="form-container" id="formContainer">
+            <div class="form-header">
+                <div class="alert alert-info" id="formInfo" style="display: none;">
+                    <i class="fas fa-info-circle"></i> <span id="formInfoText"></span>
+                </div>
+            </div>
+
+            <form id="submissionForm">
+                <div id="questionsContainer">
+                    <!-- Questions will be loaded here -->
+                    <div class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-grid gap-2 mt-4">
+                    <button type="submit" class="btn btn-primary btn-lg" id="submitFormBtn">
+                        <i class="fas fa-paper-plane"></i> Submit Form
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Thank You Message -->
+        <div class="form-container thank-you-container" id="thankYouContainer">
+            <div class="thank-you-icon">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <h2>Thank You!</h2>
+            <p class="lead" id="thankYouMessage">Your form has been submitted successfully.</p>
+            <button class="btn btn-outline-primary" id="submitAnotherBtn" style="display: none;">
+                <i class="fas fa-plus-circle"></i> Submit Another Response
+            </button>
+        </div>
+    </div>
+
+    <!-- Login Modal -->
+    <div class="modal fade" id="loginModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Login Required</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>You need to login to submit this form.</p>
+                    <form id="loginForm">
+                        <div class="mb-3">
+                            <label for="loginEmail" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="loginEmail" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="loginPassword" class="form-label">Password</label>
+                            <input type="password" class="form-control" id="loginPassword" required>
+                        </div>
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="rememberMe">
+                            <label class="form-check-label" for="rememberMe">Remember me</label>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" id="loginBtn">
+                        <span id="loginBtnText">Login</span>
+                        <span class="spinner-border spinner-border-sm" id="loginSpinner" style="display: none;"></span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+// Firebase configuration
+const firebaseConfig = {
+    apiKey: "AIzaSyD5SRZWB-QwMg7wmyTjcvHZqP-mEdlll_M",
+    authDomain: "paper-class-1ab19.firebaseapp.com",
+    databaseURL: "https://paper-class-1ab19-default-rtdb.firebaseio.com",
+    projectId: "paper-class-1ab19",
+    storageBucket: "paper-class-1ab19.appspot.com",
+    messagingSenderId: "83634677566",
+    appId: "1:83634677566:web:fb4f7a1fd869c3e82e2e6f"
+};
+
+// Initialize Firebase
+if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+}
+const auth = firebase.auth();
+const database = firebase.database();
+const storage = firebase.storage();
+
+// DOM elements
+const formContainer = document.getElementById('formContainer');
+const thankYouContainer = document.getElementById('thankYouContainer');
+const formTitle = document.getElementById('formTitle');
+const formDescription = document.getElementById('formDescription');
+const formInfo = document.getElementById('formInfo');
+const formInfoText = document.getElementById('formInfoText');
+const questionsContainer = document.getElementById('questionsContainer');
+const submissionForm = document.getElementById('submissionForm');
+const submitFormBtn = document.getElementById('submitFormBtn');
+const thankYouMessage = document.getElementById('thankYouMessage');
+const submitAnotherBtn = document.getElementById('submitAnotherBtn');
+const formProgress = document.getElementById('formProgress');
+const loginModal = new bootstrap.Modal(document.getElementById('loginModal'));
+const loginForm = document.getElementById('loginForm');
+const loginBtn = document.getElementById('loginBtn');
+const loginSpinner = document.getElementById('loginSpinner');
+const loginBtnText = document.getElementById('loginBtnText');
+const themeToggle = document.getElementById('themeToggle');
+
+// Global variables
+let formData = null;
+let currentUser = null;
+let formId = null;
+let allowMultipleSubmissions = false;
+
+// Initialize the page
+document.addEventListener('DOMContentLoaded', function() {
+    // Get form ID from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    formId = urlParams.get('formId');
+
+    if (!formId) {
+        showError('Form ID is missing from the URL');
+        return;
+    }
+
+    // Check authentication state
+    auth.onAuthStateChanged(user => {
+        currentUser = user;
+        loadForm();
+    });
+
+    // Form submission handler
+    submissionForm.addEventListener('submit', handleFormSubmission);
+
+    // Login form handler
+    loginBtn.addEventListener('click', handleLogin);
+
+    // Submit another response button
+    submitAnotherBtn.addEventListener('click', function() {
+        thankYouContainer.style.display = 'none';
+        formContainer.style.display = 'block';
+        window.scrollTo(0, 0);
+    });
+
+    // Theme toggle
+    themeToggle.addEventListener('click', toggleTheme);
+    checkTheme();
+});
+
+// Theme toggle functionality
+function toggleTheme() {
+    document.body.classList.toggle('dark-mode');
+    const icon = themeToggle.querySelector('i');
+    if (document.body.classList.contains('dark-mode')) {
+        icon.classList.replace('fa-moon', 'fa-sun');
+        localStorage.setItem('theme', 'dark');
+    } else {
+        icon.classList.replace('fa-sun', 'fa-moon');
+        localStorage.setItem('theme', 'light');
+    }
+}
+
+// Check for saved theme preference
+function checkTheme() {
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark') {
+        document.body.classList.add('dark-mode');
+        const icon = themeToggle.querySelector('i');
+        icon.classList.replace('fa-moon', 'fa-sun');
+    }
+}
+
+// Load form data
+async function loadForm() {
+    try {
+        // Get form data
+        const snapshot = await database.ref(`generalForms/${formId}`).once('value');
+        formData = snapshot.val();
+
+        if (!formData) {
+            showError('Form not found');
+            return;
+        }
+
+        // Check if form is closed
+        const now = new Date().getTime();
+        if (formData.closeTime && new Date(formData.closeTime).getTime() < now) {
+            showError('This form is no longer accepting submissions');
+            return;
+        }
+
+        // Check if login is required
+        if (formData.requireLogin && !currentUser) {
+            showLoginModal();
+            return;
+        }
+
+        // Display form info
+        formTitle.textContent = formData.title;
+        formDescription.textContent = formData.description || '';
+        
+        if (formData.access === 'students') {
+            formInfo.style.display = 'block';
+            formInfoText.textContent = 'This form is only for our students';
+        }
+
+        // Render questions
+        renderQuestions();
+
+        // Update progress bar
+        updateProgressBar();
+
+    } catch (error) {
+        console.error('Error loading form:', error);
+        showError('Failed to load form. Please try again later.');
+    }
+}
+
+// Render form questions
+function renderQuestions() {
+    questionsContainer.innerHTML = '';
+
+    if (!formData.questions || formData.questions.length === 0) {
+        questionsContainer.innerHTML = '<div class="alert alert-warning"><i class="fas fa-exclamation-triangle"></i> No questions found in this form</div>';
+        return;
+    }
+
+    formData.questions.forEach((question, index) => {
+        const questionDiv = document.createElement('div');
+        questionDiv.className = 'question-card';
+        questionDiv.dataset.questionIndex = index;
+        questionDiv.dataset.questionType = question.type;
+
+        // Question title
+        const title = document.createElement('h5');
+        title.className = question.required ? 'required-label' : '';
+        title.textContent = `${index + 1}. ${question.title}`;
+        questionDiv.appendChild(title);
+
+        // Question description if exists
+        if (question.description) {
+            const desc = document.createElement('p');
+            desc.className = 'text-muted mb-3';
+            desc.textContent = question.description;
+            questionDiv.appendChild(desc);
+        }
+
+        // Render based on question type
+        switch (question.type) {
+            case 'short-answer':
+                renderShortAnswer(questionDiv, question);
+                break;
+            case 'paragraph':
+                renderParagraph(questionDiv, question);
+                break;
+            case 'multiple-choice':
+                renderMultipleChoice(questionDiv, question);
+                break;
+            case 'checkbox':
+                renderCheckbox(questionDiv, question);
+                break;
+            case 'dropdown':
+                renderDropdown(questionDiv, question);
+                break;
+            case 'file-upload':
+                renderFileUpload(questionDiv, question);
+                break;
+            case 'linear-scale':
+                renderLinearScale(questionDiv, question);
+                break;
+            case 'rating':
+                renderRating(questionDiv, question);
+                break;
+            case 'multiple-choice-grid':
+                renderMultipleChoiceGrid(questionDiv, question);
+                break;
+            case 'checkbox-grid':
+                renderCheckboxGrid(questionDiv, question);
+                break;
+            case 'date':
+                renderDate(questionDiv, question);
+                break;
+            case 'time':
+                renderTime(questionDiv, question);
+                break;
+            default:
+                questionDiv.innerHTML += '<p class="text-danger">Unsupported question type</p>';
+        }
+
+        questionsContainer.appendChild(questionDiv);
+    });
+}
+
+// Render short answer question
+function renderShortAnswer(container, question) {
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'form-control';
+    input.required = question.required;
+    input.name = `q${container.dataset.questionIndex}`;
+    input.placeholder = 'Type your answer here...';
+    container.appendChild(input);
+}
+
+// Render paragraph question
+function renderParagraph(container, question) {
+    const textarea = document.createElement('textarea');
+    textarea.className = 'form-control';
+    textarea.rows = 4;
+    textarea.required = question.required;
+    textarea.name = `q${container.dataset.questionIndex}`;
+    textarea.placeholder = 'Type your answer here...';
+    container.appendChild(textarea);
+}
+
+// Render multiple choice question
+function renderMultipleChoice(container, question) {
+    const optionsContainer = document.createElement('div');
+    optionsContainer.className = 'options-container';
+
+    question.options.forEach((option, i) => {
+        const optionDiv = document.createElement('div');
+        optionDiv.className = 'form-check mb-2';
+
+        const input = document.createElement('input');
+        input.className = 'form-check-input';
+        input.type = 'radio';
+        input.name = `q${container.dataset.questionIndex}`;
+        input.id = `q${container.dataset.questionIndex}_o${i}`;
+        input.value = option;
+        input.required = question.required && i === 0; // Only first option needs required
+
+        const label = document.createElement('label');
+        label.className = 'form-check-label';
+        label.htmlFor = `q${container.dataset.questionIndex}_o${i}`;
+        label.textContent = option;
+
+        optionDiv.appendChild(input);
+        optionDiv.appendChild(label);
+        optionsContainer.appendChild(optionDiv);
+    });
+
+    // Add "Other" option if specified
+    if (question.includeOther) {
+        const otherDiv = document.createElement('div');
+        otherDiv.className = 'form-check mb-2';
+
+        const input = document.createElement('input');
+        input.className = 'form-check-input';
+        input.type = 'radio';
+        input.name = `q${container.dataset.questionIndex}`;
+        input.id = `q${container.dataset.questionIndex}_other`;
+        input.value = 'other';
+
+        const label = document.createElement('label');
+        label.className = 'form-check-label';
+        label.htmlFor = `q${container.dataset.questionIndex}_other`;
+        label.textContent = 'Other:';
+
+        const otherInput = document.createElement('input');
+        otherInput.type = 'text';
+        otherInput.className = 'form-control mt-2';
+        otherInput.placeholder = 'Please specify...';
+        otherInput.style.display = 'none';
+        otherInput.name = `q${container.dataset.questionIndex}_other`;
+
+        // Show/hide other input when radio is clicked
+        input.addEventListener('change', function() {
+            otherInput.style.display = this.checked ? 'block' : 'none';
+        });
+
+        otherDiv.appendChild(input);
+        otherDiv.appendChild(label);
+        otherDiv.appendChild(otherInput);
+        optionsContainer.appendChild(otherDiv);
+    }
+
+    container.appendChild(optionsContainer);
+}
+
+// Render checkbox question
+function renderCheckbox(container, question) {
+    const optionsContainer = document.createElement('div');
+    optionsContainer.className = 'options-container';
+
+    question.options.forEach((option, i) => {
+        const optionDiv = document.createElement('div');
+        optionDiv.className = 'form-check mb-2';
+
+        const input = document.createElement('input');
+        input.className = 'form-check-input';
+        input.type = 'checkbox';
+        input.name = `q${container.dataset.questionIndex}[]`;
+        input.id = `q${container.dataset.questionIndex}_o${i}`;
+        input.value = option;
+
+        const label = document.createElement('label');
+        label.className = 'form-check-label';
+        label.htmlFor = `q${container.dataset.questionIndex}_o${i}`;
+        label.textContent = option;
+
+        optionDiv.appendChild(input);
+        optionDiv.appendChild(label);
+        optionsContainer.appendChild(optionDiv);
+    });
+
+    // Add "Other" option if specified
+    if (question.includeOther) {
+        const otherDiv = document.createElement('div');
+        otherDiv.className = 'form-check mb-2';
+
+        const input = document.createElement('input');
+        input.className = 'form-check-input';
+        input.type = 'checkbox';
+        input.name = `q${container.dataset.questionIndex}[]`;
+        input.id = `q${container.dataset.questionIndex}_other`;
+        input.value = 'other';
+
+        const label = document.createElement('label');
+        label.className = 'form-check-label';
+        label.htmlFor = `q${container.dataset.questionIndex}_other`;
+        label.textContent = 'Other:';
+
+        const otherInput = document.createElement('input');
+        otherInput.type = 'text';
+        otherInput.className = 'form-control mt-2';
+        otherInput.placeholder = 'Please specify...';
+        otherInput.style.display = 'none';
+        otherInput.name = `q${container.dataset.questionIndex}_other`;
+
+        // Show/hide other input when checkbox is clicked
+        input.addEventListener('change', function() {
+            otherInput.style.display = this.checked ? 'block' : 'none';
+        });
+
+        otherDiv.appendChild(input);
+        otherDiv.appendChild(label);
+        otherDiv.appendChild(otherInput);
+        optionsContainer.appendChild(otherDiv);
+    }
+
+    container.appendChild(optionsContainer);
+}
+
+// Render dropdown question
+function renderDropdown(container, question) {
+    const select = document.createElement('select');
+    select.className = 'form-select';
+    select.required = question.required;
+    select.name = `q${container.dataset.questionIndex}`;
+
+    const defaultOption = document.createElement('option');
+    defaultOption.value = '';
+    defaultOption.textContent = '-- Select an option --';
+    defaultOption.disabled = true;
+    defaultOption.selected = true;
+    select.appendChild(defaultOption);
+
+    question.options.forEach(option => {
+        const optionElement = document.createElement('option');
+        optionElement.value = option;
+        optionElement.textContent = option;
+        select.appendChild(optionElement);
+    });
+
+    container.appendChild(select);
+}
+
+// Render file upload question
+function renderFileUpload(container, question) {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.className = 'form-control';
+    input.required = question.required;
+    input.name = `q${container.dataset.questionIndex}`;
+    input.multiple = question.maxFiles > 1;
+    input.accept = getAcceptAttribute(question.fileTypes);
+
+    // Add file type restrictions
+    const restrictions = document.createElement('div');
+    restrictions.className = 'text-muted mt-2';
+    restrictions.innerHTML = `
+        <small>
+            <i class="fas fa-info-circle"></i> 
+            Allowed file types: ${question.fileTypes.join(', ')}. 
+            Max file size: ${question.maxSize}MB. 
+            Max files: ${question.maxFiles}
+        </small>
+    `;
+
+    // Preview container
+    const previewContainer = document.createElement('div');
+    previewContainer.className = 'd-flex flex-wrap mt-3';
+    previewContainer.id = `preview-${container.dataset.questionIndex}`;
+
+    // Handle file selection
+    input.addEventListener('change', function() {
+        previewContainer.innerHTML = '';
+        
+        if (this.files.length > question.maxFiles) {
+            alert(`You can upload maximum ${question.maxFiles} file(s)`);
+            this.value = '';
+            return;
+        }
+
+        Array.from(this.files).forEach(file => {
+            // Check file size
+            if (file.size > question.maxSize * 1024 * 1024) {
+                alert(`File "${file.name}" exceeds maximum size of ${question.maxSize}MB`);
+                this.value = '';
+                previewContainer.innerHTML = '';
+                return;
+            }
+
+            // Check file type
+            if (!isFileTypeAllowed(file, question.fileTypes)) {
+                alert(`File type "${file.type || file.name.split('.').pop()}" is not allowed`);
+                this.value = '';
+                previewContainer.innerHTML = '';
+                return;
+            }
+
+            // Create preview
+            const previewDiv = document.createElement('div');
+            previewDiv.className = 'file-preview me-3 mb-3';
+
+            if (file.type.startsWith('image/')) {
+                const img = document.createElement('img');
+                img.src = URL.createObjectURL(file);
+                img.className = 'file-upload-preview';
+                img.alt = file.name;
+                previewDiv.appendChild(img);
+            } else {
+                const icon = document.createElement('i');
+                icon.className = 'fas fa-file-alt file-upload-preview';
+                previewDiv.appendChild(icon);
+            }
+
+            const fileName = document.createElement('div');
+            fileName.className = 'small text-truncate';
+            fileName.style.maxWidth = '100px';
+            fileName.textContent = file.name;
+            previewDiv.appendChild(fileName);
+
+            previewContainer.appendChild(previewDiv);
+        });
+    });
+
+    container.appendChild(input);
+    container.appendChild(restrictions);
+    container.appendChild(previewContainer);
+}
+
+// Render linear scale question
+function renderLinearScale(container, question) {
+    const scaleContainer = document.createElement('div');
+    scaleContainer.className = 'scale-container';
+
+    // Labels
+    const labelsDiv = document.createElement('div');
+    labelsDiv.className = 'd-flex justify-content-between mb-2';
+
+    const minLabel = document.createElement('span');
+    minLabel.textContent = question.minLabel || question.minValue;
+    labelsDiv.appendChild(minLabel);
+
+    const maxLabel = document.createElement('span');
+    maxLabel.textContent = question.maxLabel || question.maxValue;
+    labelsDiv.appendChild(maxLabel);
+
+    scaleContainer.appendChild(labelsDiv);
+
+    // Range input
+    const range = document.createElement('input');
+    range.type = 'range';
+    range.className = 'form-range';
+    range.min = question.minValue;
+    range.max = question.maxValue;
+    range.step = '1';
+    range.required = question.required;
+    range.name = `q${container.dataset.questionIndex}`;
+    range.value = Math.floor((parseInt(question.maxValue) + parseInt(question.minValue)) / 2);
+
+    // Value display
+    const valueDisplay = document.createElement('div');
+    valueDisplay.className = 'text-center mt-2';
+    valueDisplay.textContent = range.value;
+
+    range.addEventListener('input', function() {
+        valueDisplay.textContent = this.value;
+    });
+
+    scaleContainer.appendChild(range);
+    scaleContainer.appendChild(valueDisplay);
+    container.appendChild(scaleContainer);
+}
+
+// Render rating question
+function renderRating(container, question) {
+    const ratingContainer = document.createElement('div');
+    ratingContainer.className = 'rating-container';
+
+    if (question.scale === 'stars' || question.scale === '5' || question.scale === '10') {
+        const max = question.scale === '10' ? 10 : 5;
+        const starsContainer = document.createElement('div');
+        starsContainer.className = 'd-flex justify-content-center';
+
+        for (let i = 1; i <= max; i++) {
+            const star = document.createElement('i');
+            star.className = 'fas fa-star rating-stars me-2';
+            star.dataset.value = i;
+
+            star.addEventListener('mouseover', function() {
+                // Highlight stars up to this one
+                const stars = starsContainer.querySelectorAll('.rating-stars');
+                stars.forEach((s, index) => {
+                    s.classList.toggle('fas', index < i);
+                    s.classList.toggle('far', index >= i);
+                });
+            });
+
+            star.addEventListener('click', function() {
+                // Set the value
+                const hiddenInput = container.querySelector('input[type="hidden"]');
+                hiddenInput.value = i;
+
+                // Keep stars filled
+                const stars = starsContainer.querySelectorAll('.rating-stars');
+                stars.forEach((s, index) => {
+                    s.classList.toggle('fas', index < i);
+                    s.classList.toggle('far', index >= i);
+                });
+            });
+
+            starsContainer.appendChild(star);
+        }
+
+        // Hidden input to store the value
+        const hiddenInput = document.createElement('input');
+        hiddenInput.type = 'hidden';
+        hiddenInput.name = `q${container.dataset.questionIndex}`;
+        hiddenInput.required = question.required;
+
+        ratingContainer.appendChild(starsContainer);
+        ratingContainer.appendChild(hiddenInput);
+    } else if (question.scale === 'smileys') {
+        const smileysContainer = document.createElement('div');
+        smileysContainer.className = 'd-flex justify-content-center';
+
+        const smileys = [
+            { icon: 'far fa-frown', value: 1 },
+            { icon: 'far fa-meh', value: 2 },
+            { icon: 'far fa-smile', value: 3 },
+            { icon: 'far fa-laugh', value: 4 },
+            { icon: 'far fa-grin-hearts', value: 5 }
+        ];
+
+        smileys.forEach(smiley => {
+            const smileyElement = document.createElement('i');
+            smileyElement.className = `${smiley.icon} smiley-rating`;
+            smileyElement.dataset.value = smiley.value;
+
+            smileyElement.addEventListener('click', function() {
+                // Remove active class from all smileys
+                smileysContainer.querySelectorAll('.smiley-rating').forEach(s => {
+                    s.classList.remove('text-primary');
+                });
+
+                // Add active class to this smiley
+                this.classList.add('text-primary');
+
+                // Set the value
+                const hiddenInput = container.querySelector('input[type="hidden"]');
+                hiddenInput.value = smiley.value;
+            });
+
+            smileysContainer.appendChild(smileyElement);
+        });
+
+        // Hidden input to store the value
+        const hiddenInput = document.createElement('input');
+        hiddenInput.type = 'hidden';
+        hiddenInput.name = `q${container.dataset.questionIndex}`;
+        hiddenInput.required = question.required;
+
+        ratingContainer.appendChild(smileysContainer);
+        ratingContainer.appendChild(hiddenInput);
+    }
+
+    container.appendChild(ratingContainer);
+}
+
+// Render multiple choice grid
+function renderMultipleChoiceGrid(container, question) {
+    const table = document.createElement('table');
+    table.className = 'table table-bordered';
+
+    // Table header
+    const thead = document.createElement('thead');
+    const headerRow = document.createElement('tr');
+    headerRow.appendChild(document.createElement('th')); // Empty top-left cell
+
+    question.columns.forEach(column => {
+        const th = document.createElement('th');
+        th.textContent = column;
+        th.className = 'text-center';
+        headerRow.appendChild(th);
+    });
+
+    thead.appendChild(headerRow);
+    table.appendChild(thead);
+
+    // Table body
+    const tbody = document.createElement('tbody');
+
+    question.rows.forEach((row, rowIndex) => {
+        const tr = document.createElement('tr');
+        
+        // Row header
+        const th = document.createElement('th');
+        th.textContent = row;
+        th.scope = 'row';
+        tr.appendChild(th);
+
+        // Radio buttons for each column
+        question.columns.forEach((column, colIndex) => {
+            const td = document.createElement('td');
+            td.className = 'text-center';
+
+            const radio = document.createElement('input');
+            radio.type = 'radio';
+            radio.name = `q${container.dataset.questionIndex}_r${rowIndex}`;
+            radio.value = column;
+            radio.required = question.required && colIndex === 0; // Only first column needs required
+
+            td.appendChild(radio);
+            tr.appendChild(td);
+        });
+
+        tbody.appendChild(tr);
+    });
+
+    table.appendChild(tbody);
+    container.appendChild(table);
+}
+
+// Render checkbox grid
+function renderCheckboxGrid(container, question) {
+    const table = document.createElement('table');
+    table.className = 'table table-bordered';
+
+    // Table header
+    const thead = document.createElement('thead');
+    const headerRow = document.createElement('tr');
+    headerRow.appendChild(document.createElement('th')); // Empty top-left cell
+
+    question.columns.forEach(column => {
+        const th = document.createElement('th');
+        th.textContent = column;
+        th.className = 'text-center';
+        headerRow.appendChild(th);
+    });
+
+    thead.appendChild(headerRow);
+    table.appendChild(thead);
+
+    // Table body
+    const tbody = document.createElement('tbody');
+
+    question.rows.forEach((row, rowIndex) => {
+        const tr = document.createElement('tr');
+        
+        // Row header
+        const th = document.createElement('th');
+        th.textContent = row;
+        th.scope = 'row';
+        tr.appendChild(th);
+
+        // Checkboxes for each column
+        question.columns.forEach(column => {
+            const td = document.createElement('td');
+            td.className = 'text-center';
+
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.name = `q${container.dataset.questionIndex}_r${rowIndex}[]`;
+            checkbox.value = column;
+
+            td.appendChild(checkbox);
+            tr.appendChild(td);
+        });
+
+        tbody.appendChild(tr);
+    });
+
+    table.appendChild(tbody);
+    container.appendChild(table);
+}
+
+
+// Render date question
+function renderDate(container, question) {
+    const input = document.createElement('input');
+    input.type = 'date';
+    input.className = 'form-control';
+    input.required = question.required;
+    input.name = `q${container.dataset.questionIndex}`;
+
+    if (question.includeTime) {
+        const timeInput = document.createElement('input');
+        timeInput.type = 'time';
+        timeInput.className = 'form-control mt-2';
+        timeInput.name = `q${container.dataset.questionIndex}_time`;
+        container.appendChild(input);
+        container.appendChild(timeInput);
+    } else {
+        container.appendChild(input);
+    }
+}
+
+// Render time question
+function renderTime(container, question) {
+    const input = document.createElement('input');
+    input.type = 'time';
+    input.className = 'form-control';
+    input.required = question.required;
+    input.name = `q${container.dataset.questionIndex}`;
+    container.appendChild(input);
+}
+
+// Get accept attribute for file input
+function getAcceptAttribute(fileTypes) {
+    const accept = [];
+    
+    fileTypes.forEach(type => {
+        switch (type) {
+            case 'pdf':
+                accept.push('.pdf');
+                break;
+            case 'doc':
+                accept.push('.doc,.docx');
+                break;
+            case 'image':
+                accept.push('image/*');
+                break;
+            case 'spreadsheet':
+                accept.push('.xls,.xlsx,.csv');
+                break;
+            case 'video':
+                accept.push('video/*');
+                break;
+            case 'audio':
+                accept.push('audio/*');
+                break;
+        }
+    });
+    
+    return accept.join(',');
+}
+
+// Check if file type is allowed
+function isFileTypeAllowed(file, allowedTypes) {
+    const extension = file.name.split('.').pop().toLowerCase();
+    const type = file.type.split('/')[0]; // 'image', 'video', etc.
+
+    return allowedTypes.some(allowedType => {
+        switch (allowedType) {
+            case 'pdf':
+                return extension === 'pdf';
+            case 'doc':
+                return ['doc', 'docx'].includes(extension);
+            case 'image':
+                return type === 'image';
+            case 'spreadsheet':
+                return ['xls', 'xlsx', 'csv'].includes(extension);
+            case 'video':
+                return type === 'video';
+            case 'audio':
+                return type === 'audio';
+            default:
+                return false;
+        }
+    });
+}
+
+// Show login modal
+function showLoginModal() {
+    // Clear previous inputs
+    document.getElementById('loginEmail').value = '';
+    document.getElementById('loginPassword').value = '';
+    
+    // Show modal with backdrop (prevent closing)
+    const modal = new bootstrap.Modal(document.getElementById('loginModal'), {
+        backdrop: 'static',
+        keyboard: false
+    });
+    modal.show();
+    
+    // Focus on email field
+    setTimeout(() => {
+        document.getElementById('loginEmail').focus();
+    }, 500);
+}
+
+// Handle login
+async function handleLogin() {
+    const email = document.getElementById('loginEmail').value;
+    const password = document.getElementById('loginPassword').value;
+    
+    if (!email || !password) {
+        alert('Please enter both email and password');
+        return;
+    }
+
+    try {
+        loginBtn.disabled = true;
+        loginSpinner.style.display = 'inline-block';
+        loginBtnText.textContent = 'Logging in...';
+        
+        await auth.signInWithEmailAndPassword(email, password);
+        
+        // Close modal and reload form
+        loginModal.hide();
+        loadForm();
+        
+    } catch (error) {
+        console.error('Login error:', error);
+        // Show error in modal
+        const errorElement = document.createElement('div');
+        errorElement.className = 'alert alert-danger mt-3';
+        errorElement.textContent = error.message;
+        // Remove previous errors
+        const existingError = document.querySelector('#loginModal .alert');
+        if (existingError) existingError.remove();
+        document.querySelector('#loginModal .modal-body').appendChild(errorElement);
+    } finally {
+        loginBtn.disabled = false;
+        loginSpinner.style.display = 'none';
+        loginBtnText.textContent = 'Login';
+    }
+}
+
+// Handle form submission
+async function handleFormSubmission(e) {
+    e.preventDefault();
+    
+    try {
+        // Check if login is required and user is not logged in
+        if (formData.requireLogin && !currentUser) {
+            showLoginModal();
+            return;
+        }
+
+        // Disable submit button and show loading state
+        submitFormBtn.disabled = true;
+        submitFormBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Submitting...';
+
+        // Validate form
+        if (!validateForm()) {
+            submitFormBtn.disabled = false;
+            submitFormBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Form';
+            return;
+        }
+
+        // Prepare submission data
+        const submissionData = {
+            timestamp: firebase.database.ServerValue.TIMESTAMP,
+            responses: {}
+        };
+
+        // Add user info if logged in
+        if (currentUser) {
+            submissionData.userId = currentUser.uid;
+            
+            // Get additional user info from database if available
+            const userSnapshot = await database.ref(`users/${currentUser.uid}`).once('value');
+            if (userSnapshot.exists()) {
+                const userData = userSnapshot.val();
+                submissionData.name = userData.name || currentUser.displayName || currentUser.email;
+                submissionData.email = currentUser.email;
+                submissionData.nic = userData.nic || '';
+            } else {
+                submissionData.name = currentUser.displayName || currentUser.email;
+                submissionData.email = currentUser.email;
+            }
+        } else {
+            submissionData.name = 'Anonymous';
+        }
+
+        // Process each question and collect responses
+        const questions = document.querySelectorAll('.question-card');
+        const fileUploads = [];
+        
+        for (const question of questions) {
+            const questionIndex = question.dataset.questionIndex;
+            const questionType = question.dataset.questionType;
+            const questionData = formData.questions[questionIndex];
+            
+            switch (questionType) {
+                case 'short-answer':
+                case 'paragraph':
+                    submissionData.responses[questionIndex] = question.querySelector('input, textarea').value;
+                    break;
+                    
+                case 'multiple-choice':
+                    const selectedRadio = question.querySelector('input[type="radio"]:checked');
+                    if (selectedRadio) {
+                        if (selectedRadio.value === 'other') {
+                            const otherInput = question.querySelector('input[type="text"]');
+                            submissionData.responses[questionIndex] = otherInput ? otherInput.value : '';
+                        } else {
+                            submissionData.responses[questionIndex] = selectedRadio.value;
+                        }
+                    }
+                    break;
+                    
+                case 'checkbox':
+                    const checkedBoxes = Array.from(question.querySelectorAll('input[type="checkbox"]:checked'))
+                        .map(checkbox => {
+                            if (checkbox.value === 'other') {
+                                const otherInput = question.querySelector('input[type="text"]');
+                                return otherInput ? otherInput.value : 'other';
+                            }
+                            return checkbox.value;
+                        });
+                    submissionData.responses[questionIndex] = checkedBoxes;
+                    break;
+                    
+                case 'dropdown':
+                    const select = question.querySelector('select');
+                    submissionData.responses[questionIndex] = select.value;
+                    break;
+                    
+                case 'file-upload':
+                    const files = question.querySelector('input[type="file"]').files;
+                    if (files.length > 0) {
+                        // We'll handle file uploads separately
+                        fileUploads.push({ questionIndex, files: Array.from(files) });
+                        submissionData.responses[questionIndex] = []; // Placeholder for file URLs
+                    }
+                    break;
+                    
+                case 'linear-scale':
+                    submissionData.responses[questionIndex] = question.querySelector('input[type="range"]').value;
+                    break;
+                    
+                case 'rating':
+                    submissionData.responses[questionIndex] = question.querySelector('input[type="hidden"]').value;
+                    break;
+                    
+                case 'multiple-choice-grid':
+                    const gridResponses = {};
+                    questionData.rows.forEach((row, rowIndex) => {
+                        const selected = question.querySelector(`input[name="q${questionIndex}_r${rowIndex}"]:checked`);
+                        if (selected) {
+                            gridResponses[rowIndex] = selected.value;
+                        }
+                    });
+                    submissionData.responses[questionIndex] = gridResponses;
+                    break;
+                    
+                case 'checkbox-grid':
+                    const checkboxGridResponses = {};
+                    questionData.rows.forEach((row, rowIndex) => {
+                        const checked = Array.from(question.querySelectorAll(`input[name="q${questionIndex}_r${rowIndex}[]"]:checked`))
+                            .map(checkbox => checkbox.value);
+                        checkboxGridResponses[rowIndex] = checked;
+                    });
+                    submissionData.responses[questionIndex] = checkboxGridResponses;
+                    break;
+                    
+                case 'date':
+                    const dateValue = question.querySelector('input[type="date"]').value;
+                    if (questionData.includeTime) {
+                        const timeValue = question.querySelector('input[type="time"]').value;
+                        submissionData.responses[questionIndex] = {
+                            date: dateValue,
+                            time: timeValue
+                        };
+                    } else {
+                        submissionData.responses[questionIndex] = dateValue;
+                    }
+                    break;
+                    
+                case 'time':
+                    submissionData.responses[questionIndex] = question.querySelector('input[type="time"]').value;
+                    break;
+            }
+        }
+
+        // Upload files if any
+        if (fileUploads.length > 0) {
+            for (const upload of fileUploads) {
+                const fileUrls = [];
+                
+                for (const file of upload.files) {
+                    // Create storage path
+                    const filePath = `form-submissions/${formId}/${Date.now()}-${file.name}`;
+                    const storageRef = storage.ref(filePath);
+                    
+                    // Upload file
+                    await storageRef.put(file);
+                    
+                    // Get download URL
+                    const downloadUrl = await storageRef.getDownloadURL();
+                    
+                    fileUrls.push({
+                        name: file.name,
+                        url: downloadUrl,
+                        size: file.size,
+                        type: file.type
+                    });
+                }
+                
+                // Update submission data with file URLs
+                submissionData.responses[upload.questionIndex] = fileUrls;
+            }
+        }
+
+        // Save submission to database
+        const submissionRef = database.ref(`formSubmissions/${formId}`).push();
+        await submissionRef.set(submissionData);
+
+        // Show thank you message
+        showThankYouMessage();
+
+    } catch (error) {
+        console.error('Error submitting form:', error);
+        alert(`Error submitting form: ${error.message}`);
+        submitFormBtn.disabled = false;
+        submitFormBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Form';
+    }
+}
+
+// Validate form
+function validateForm() {
+    let isValid = true;
+    const questions = document.querySelectorAll('.question-card');
+    
+    questions.forEach(question => {
+        const questionIndex = question.dataset.questionIndex;
+        const questionType = question.dataset.questionType;
+        const questionData = formData.questions[questionIndex];
+        
+        if (!questionData.required) return;
+        
+        let isAnswered = false;
+        
+        switch (questionType) {
+            case 'short-answer':
+            case 'paragraph':
+                isAnswered = question.querySelector('input, textarea').value.trim() !== '';
+                break;
+                
+            case 'multiple-choice':
+                isAnswered = question.querySelector('input[type="radio"]:checked') !== null;
+                break;
+                
+            case 'checkbox':
+                isAnswered = question.querySelectorAll('input[type="checkbox"]:checked').length > 0;
+                break;
+                
+            case 'dropdown':
+                isAnswered = question.querySelector('select').value !== '';
+                break;
+                
+            case 'file-upload':
+                isAnswered = question.querySelector('input[type="file"]').files.length > 0;
+                break;
+                
+            case 'linear-scale':
+            case 'rating':
+                // These always have a value by default
+                isAnswered = true;
+                break;
+                
+            case 'multiple-choice-grid':
+                const gridAnswered = Array.from(question.querySelectorAll('input[type="radio"]')).some(radio => radio.checked);
+                isAnswered = !questionData.required || gridAnswered;
+                break;
+                
+            case 'checkbox-grid':
+                const checkboxGridAnswered = Array.from(question.querySelectorAll('input[type="checkbox"]')).some(checkbox => checkbox.checked);
+                isAnswered = !questionData.required || checkboxGridAnswered;
+                break;
+                
+            case 'date':
+                isAnswered = question.querySelector('input[type="date"]').value !== '';
+                break;
+                
+            case 'time':
+                isAnswered = question.querySelector('input[type="time"]').value !== '';
+                break;
+        }
+        
+        if (!isAnswered) {
+            isValid = false;
+            // Highlight the unanswered required question
+            question.style.borderColor = '#dc3545';
+            question.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            
+            // Create error message if not already present
+            if (!question.querySelector('.error-message')) {
+                const errorMsg = document.createElement('div');
+                errorMsg.className = 'text-danger error-message mt-2';
+                errorMsg.textContent = 'This question is required';
+                question.appendChild(errorMsg);
+            }
+        } else {
+            // Remove error styling if answered
+            question.style.borderColor = 'var(--border-color)';
+            const errorMsg = question.querySelector('.error-message');
+            if (errorMsg) errorMsg.remove();
+        }
+    });
+    
+    return isValid;
+}
+
+// Show thank you message
+function showThankYouMessage() {
+    formContainer.style.display = 'none';
+    thankYouContainer.style.display = 'block';
+    
+    // Custom thank you message if defined
+    if (formData.thankYouMessage) {
+        thankYouMessage.textContent = formData.thankYouMessage;
+    }
+    
+    // Show "submit another" button if allowed
+    if (allowMultipleSubmissions) {
+        submitAnotherBtn.style.display = 'inline-block';
+    }
+    
+    // Scroll to top
+    window.scrollTo(0, 0);
+}
+
+// Show error message
+function showError(message) {
+    questionsContainer.innerHTML = `
+        <div class="alert alert-danger">
+            <i class="fas fa-exclamation-triangle"></i> ${message}
+        </div>
+    `;
+    submitFormBtn.style.display = 'none';
+}
+
+// Update progress bar based on answered questions
+function updateProgressBar() {
+    if (!formData.questions) return;
+    
+    const questions = document.querySelectorAll('.question-card');
+    let answeredCount = 0;
+    
+    questions.forEach(question => {
+        const questionIndex = question.dataset.questionIndex;
+        const questionType = question.dataset.questionType;
+        const questionData = formData.questions[questionIndex];
+        
+        let isAnswered = false;
+        
+        switch (questionType) {
+            case 'short-answer':
+            case 'paragraph':
+                isAnswered = question.querySelector('input, textarea').value.trim() !== '';
+                break;
+                
+            case 'multiple-choice':
+                isAnswered = question.querySelector('input[type="radio"]:checked') !== null;
+                break;
+                
+            case 'checkbox':
+                isAnswered = question.querySelectorAll('input[type="checkbox"]:checked').length > 0;
+                break;
+                
+            case 'dropdown':
+                isAnswered = question.querySelector('select').value !== '';
+                break;
+                
+            case 'file-upload':
+                isAnswered = question.querySelector('input[type="file"]').files.length > 0;
+                break;
+                
+            case 'linear-scale':
+            case 'rating':
+                // These always have a value by default
+                isAnswered = true;
+                break;
+                
+            case 'multiple-choice-grid':
+                isAnswered = Array.from(question.querySelectorAll('input[type="radio"]')).some(radio => radio.checked);
+                break;
+                
+            case 'checkbox-grid':
+                isAnswered = Array.from(question.querySelectorAll('input[type="checkbox"]')).some(checkbox => checkbox.checked);
+                break;
+                
+            case 'date':
+                isAnswered = question.querySelector('input[type="date"]').value !== '';
+                break;
+                
+            case 'time':
+                isAnswered = question.querySelector('input[type="time"]').value !== '';
+                break;
+        }
+        
+        if (isAnswered) answeredCount++;
+    });
+    
+    // Calculate progress percentage
+    const progress = (answeredCount / formData.questions.length) * 100;
+    formProgress.style.width = `${progress}%`;
+}
+
+// Add event listeners for form changes to update progress bar
+document.addEventListener('input', function(e) {
+    if (e.target.closest('.question-card')) {
+        updateProgressBar();
+    }
+});
+
+document.addEventListener('change', function(e) {
+    if (e.target.closest('.question-card')) {
+        updateProgressBar();
+    }
+});
+
+// Handle authentication state changes
+auth.onAuthStateChanged(user => {
+    currentUser = user;
+    if (user && formData && formData.requireLogin) {
+        document.getElementById('userInfo').style.display = 'block';
+        document.getElementById('userEmail').textContent = user.email;
+        loadForm();
+    } else if (!user && formData && formData.requireLogin) {
+        // Login required but no user - show login modal
+        showLoginModal();
+        document.getElementById('userInfo').style.display = 'none';
+    }
+});       
+    </script>
+    <script src="main.js"></script>
+</body>
+</html>
