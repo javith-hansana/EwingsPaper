@@ -13,11 +13,30 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
 const auth = firebase.auth();
+const storage = firebase.storage();
 
 // DOM elements
 const themeToggle = document.getElementById('themeToggle');
-const answerForm = document.getElementById('answerForm');
+const prevBtn = document.getElementById('prevBtn');
+const nextBtn = document.getElementById('nextBtn');
+const submitBtn = document.getElementById('submitBtn');
+const viewResultsBtn = document.getElementById('viewResultsBtn');
+const progressBar = document.querySelector('.progress-bar');
+const steps = document.querySelectorAll('.step');
+const sections = document.querySelectorAll('.section');
+const personalInfoForm = document.getElementById('personalInfoForm');
 const questionsContainer = document.getElementById('questionsContainer');
+const pdfFrame = document.getElementById('pdfFrame');
+const zoomLevelDisplay = document.querySelector('.zoom-level');
+const zoomButtons = document.querySelectorAll('.zoom-btn');
+
+// Variables
+let currentSection = 1;
+let totalSections = 3;
+let paperId = '';
+let selectedMedium = '';
+let zoomLevel = 1;
+let pdfUrl = '';
 
 // Theme toggle functionality
 function toggleTheme() {
@@ -48,16 +67,14 @@ function getPaperIdFromUrl() {
     return urlParams.get('paperId');
 }
 
-// Load paper details and questions
-function loadPaperQuestions() {
-    const paperId = getPaperIdFromUrl();
+// Load paper details
+function loadPaperDetails() {
+    paperId = getPaperIdFromUrl();
     if (!paperId) {
         alert('Invalid paper link');
         window.location.href = 'index.html';
         return;
     }
-
-    document.getElementById('paperId').value = paperId;
 
     // Load paper details
     database.ref('papers/' + paperId).once('value').then(snapshot => {
@@ -86,32 +103,6 @@ function loadPaperQuestions() {
             document.getElementById('paperMediums').textContent = 'Not specified';
         }
 
-        // Show medium selection if multiple options
-        if (mediums.length > 1) {
-            const mediumOptions = document.getElementById('mediumOptions');
-            mediumOptions.innerHTML = '';
-            
-            mediums.forEach(medium => {
-                const btn = document.createElement('button');
-                btn.type = 'button';
-                btn.className = 'medium-btn btn btn-outline-primary';
-                btn.textContent = medium;
-                btn.addEventListener('click', () => {
-                    document.querySelectorAll('.medium-btn').forEach(b => b.classList.remove('active'));
-                    btn.classList.add('active');
-                    document.getElementById('selectedMedium').value = medium;
-                    loadQuestionsForMedium(paperId, medium);
-                });
-                mediumOptions.appendChild(btn);
-            });
-            
-            document.getElementById('mediumSelection').style.display = 'block';
-        } else if (mediums.length === 1) {
-            // Only one medium, select it automatically
-            document.getElementById('selectedMedium').value = mediums[0];
-            loadQuestionsForMedium(paperId, mediums[0]);
-        }
-
         // Set up countdown timer
         if (paper.closeTime) {
             setupTimer(paper.closeTime);
@@ -121,59 +112,6 @@ function loadPaperQuestions() {
     }).catch(error => {
         console.error('Error loading paper:', error);
         alert('Error loading paper. Please try again.');
-    });
-}
-
-// Load questions for selected medium
-function loadQuestionsForMedium(paperId, medium) {
-    database.ref(`papers/${paperId}/questions`).once('value').then(snapshot => {
-        const allQuestions = snapshot.val() || {};
-        
-        // Filter questions by medium if available
-        let questions = {};
-        if (allQuestions[medium]) {
-            questions = allQuestions[medium];
-        } else {
-            questions = allQuestions;
-        }
-
-        // Display answer sheet
-        questionsContainer.innerHTML = '';
-        let questionCount = 0;
-
-        for (const [qNum, question] of Object.entries(questions)) {
-            questionCount++;
-            const row = document.createElement('tr');
-            row.className = 'question-item';
-            row.dataset.questionNumber = qNum;
-            row.innerHTML = `
-                <td>${qNum}</td>
-                <td><input type="radio" class="answer-radio" name="q${qNum}" value="1" required></td>
-                <td><input type="radio" class="answer-radio" name="q${qNum}" value="2" required></td>
-                <td><input type="radio" class="answer-radio" name="q${qNum}" value="3" required></td>
-                <td><input type="radio" class="answer-radio" name="q${qNum}" value="4" required></td>
-                <td><input type="radio" class="answer-radio" name="q${qNum}" value="5" required></td>
-            `;
-            questionsContainer.appendChild(row);
-        }
-
-        // Show answer section and submit button
-        document.getElementById('answerSection').style.display = 'block';
-        document.getElementById('submitBtn').style.display = 'block';
-
-        // Add visual feedback for answered questions
-        document.querySelectorAll('.answer-radio').forEach(radio => {
-            radio.addEventListener('change', function() {
-                const questionNumber = this.name.substring(1);
-                const questionRow = document.querySelector(`tr[data-question-number="${questionNumber}"]`);
-                if (questionRow) {
-                    questionRow.classList.add('answered');
-                }
-            });
-        });
-    }).catch(error => {
-        console.error('Error loading questions:', error);
-        alert('Error loading questions. Please try again.');
     });
 }
 
@@ -188,7 +126,7 @@ function setupTimer(closeTime) {
         if (distance < 0) {
             clearInterval(timer);
             document.getElementById('timeRemaining').textContent = "TIME EXPIRED";
-            document.getElementById('submitBtn').disabled = true;
+            submitBtn.disabled = true;
             document.getElementById('timerSection').className = 'timer alert alert-danger';
             return;
         }
@@ -208,35 +146,113 @@ function setupTimer(closeTime) {
     }, 1000);
 }
 
-// Handle form submission
-function handleSubmit(e) {
-    e.preventDefault();
+// Load PDF based on selected medium
+// Modified loadPdf function to correct the URL issue
+function loadPdf() {
+    const loadingIndicator = document.getElementById('pdfLoading');
+    const pdfFrame = document.getElementById('pdfFrame');
     
-    const paperId = document.getElementById('paperId').value;
-    const medium = document.getElementById('selectedMedium').value;
+    loadingIndicator.style.display = 'block';
+    pdfFrame.style.display = 'none';
+    
+    selectedMedium = document.querySelector('input[name="medium"]:checked').value;
+    
+    // Correct file path pattern
+    const filePath = `papers/${paperId}/${selectedMedium === 'sinhala' ? 'paper-sinhala' : 'paper-english'}.pdf`;
+    console.log('Attempting to load PDF from:', filePath);
+    
+    const storageRef = storage.ref(filePath);
+    
+    storageRef.getDownloadURL().then((url) => {
+        console.log('PDF URL:', url);
+        pdfUrl = url;
+        
+        // Use the URL directly without modification
+        pdfFrame.src = url + '#toolbar=0&navpanes=0&scrollbar=0';
+        
+        pdfFrame.onload = function() {
+            loadingIndicator.style.display = 'none';
+            pdfFrame.style.display = 'block';
+        };
+        
+        pdfFrame.onerror = function() {
+            loadingIndicator.style.display = 'none';
+            console.error('Iframe failed to load PDF');
+            alert('Error loading PDF. Please try again or contact support.');
+        };
+    }).catch(error => {
+        loadingIndicator.style.display = 'none';
+        console.error('Error getting download URL:', error);
+        
+        // More detailed error message
+        let errorMessage = 'Error loading PDF. Please try again or contact support.';
+        if (error.code === 'storage/object-not-found') {
+            errorMessage = 'The requested PDF file was not found. Please check if the paper exists for the selected medium.';
+        }
+        alert(errorMessage);
+    });
+}
+
+// Handle zoom buttons
+function handleZoom(action) {
+    if (action === 'zoom-in') {
+        zoomLevel = Math.min(zoomLevel + 0.1, 2); // Max zoom 200%
+    } else {
+        zoomLevel = Math.max(zoomLevel - 0.1, 0.5); // Min zoom 50%
+    }
+    
+    zoomLevelDisplay.textContent = `${Math.round(zoomLevel * 100)}%`;
+    pdfFrame.style.transform = `scale(${zoomLevel})`;
+    pdfFrame.style.transformOrigin = '0 0';
+}
+
+// Load questions for answer section
+function loadQuestions() {
+    database.ref(`papers/${paperId}/questions`).once('value').then(snapshot => {
+        const questions = snapshot.val() || {};
+        
+        // Display answer sheet
+        questionsContainer.innerHTML = '';
+        
+        for (const [qNum, question] of Object.entries(questions)) {
+            const row = document.createElement('tr');
+            row.className = 'question-item';
+            row.dataset.questionNumber = qNum;
+            row.innerHTML = `
+                <td>${qNum}</td>
+                <td><input type="radio" class="answer-radio" name="q${qNum}" value="1" required></td>
+                <td><input type="radio" class="answer-radio" name="q${qNum}" value="2" required></td>
+                <td><input type="radio" class="answer-radio" name="q${qNum}" value="3" required></td>
+                <td><input type="radio" class="answer-radio" name="q${qNum}" value="4" required></td>
+                <td><input type="radio" class="answer-radio" name="q${qNum}" value="5" required></td>
+            `;
+            questionsContainer.appendChild(row);
+        }
+
+        // Add visual feedback for answered questions
+        document.querySelectorAll('.answer-radio').forEach(radio => {
+            radio.addEventListener('change', function() {
+                const questionNumber = this.name.substring(1);
+                const questionRow = document.querySelector(`tr[data-question-number="${questionNumber}"]`);
+                if (questionRow) {
+                    questionRow.classList.add('answered');
+                }
+            });
+        });
+    }).catch(error => {
+        console.error('Error loading questions:', error);
+        alert('Error loading questions. Please try again.');
+    });
+}
+
+// Handle form submission
+function handleSubmit() {
     const nic = document.getElementById('nic').value.trim();
     const name = document.getElementById('name').value.trim();
     const district = document.getElementById('district').value;
     const studentClass = document.getElementById('class').value;
     const school = document.getElementById('school').value.trim();
     const phone = document.getElementById('phone').value.trim();
-    
-    // Validate required fields
-    if (!nic || !name || !district || !studentClass) {
-        alert('Please fill in all required fields (marked with *)');
-        return;
-    }
-    
-    if (!medium) {
-        alert('Please select a medium first');
-        return;
-    }
-    
-    // Check if time has expired
-    if (document.getElementById('timeRemaining').textContent === "TIME EXPIRED") {
-        alert('The submission time has expired. Your answers cannot be submitted.');
-        return;
-    }
     
     // Get all answers
     const answers = {};
@@ -255,21 +271,12 @@ function handleSubmit(e) {
     }
     
     // Disable submit button to prevent duplicate submissions
-    const submitBtn = document.getElementById('submitBtn');
     submitBtn.disabled = true;
     submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Submitting...';
     
     // Calculate score
     database.ref(`papers/${paperId}/questions`).once('value').then(snapshot => {
-        const allQuestions = snapshot.val() || {};
-        
-        // Get questions for the selected medium
-        let questions = {};
-        if (allQuestions[medium]) {
-            questions = allQuestions[medium];
-        } else {
-            questions = allQuestions;
-        }
+        const questions = snapshot.val() || {};
         
         let score = 0;
         let totalPossible = 0;
@@ -289,7 +296,7 @@ function handleSubmit(e) {
             class: studentClass,
             school: school || '',
             phone: phone || '',
-            medium,
+            medium: selectedMedium,
             answers,
             score,
             totalPossible,
@@ -297,16 +304,145 @@ function handleSubmit(e) {
         };
         
         // Submit data
-        return database.ref(`submissions/${paperId}/${nic}`).set(submission);
-    }).then(() => {
-        alert('Answers submitted successfully!');
-        window.location.href = `results.html?paperId=${paperId}&nic=${nic}`;
+        return database.ref(`submissions/${paperId}/${nic}`).set(submission)
+            .then(() => ({ score, totalPossible })); // Return score data for success message
+    }).then(({ score, totalPossible }) => {
+        // Show success section with score details
+        document.getElementById('sectionSuccess').innerHTML = `
+    <div class="card">
+        <div class="card-body text-center py-5">
+            <div class="success-icon mb-4">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <h2 class="mb-3">Answers Submitted Successfully!</h2>
+            <p class="text-muted mb-3">You scored ${score} out of ${totalPossible} points.</p>
+            <div class="d-flex justify-content-center mb-4">
+                <div class="progress" style="height: 20px; width: 80%;">
+                    <div class="progress-bar bg-success" role="progressbar" 
+                         style="width: ${(score/totalPossible)*100}%" 
+                         aria-valuenow="${(score/totalPossible)*100}" 
+                         aria-valuemin="0" aria-valuemax="100">
+                        ${Math.round((score/totalPossible)*100)}%
+                    </div>
+                </div>
+            </div>
+            <p class="text-muted mb-4">Thank you for completing the paper. Your answers have been recorded.</p>
+            <button id="viewResultsBtn" class="btn btn-primary">
+                <i class="fas fa-chart-bar me-2"></i> View Detailed Results
+            </button>
+        </div>
+    </div>
+`;
+        
+        showSection('sectionSuccess');
+        updateProgress(100);
+        prevBtn.style.display = 'none';
+        nextBtn.style.display = 'none';
+        submitBtn.style.display = 'none';
+        
+        // Re-attach event listener for the results button
+        document.getElementById('viewResultsBtn').addEventListener('click', () => {
+            window.location.href = `results.html?paperId=${paperId}&nic=${nic}`;
+        });
     }).catch(error => {
         console.error('Submission error:', error);
         alert(`Error: ${error.message}`);
         submitBtn.disabled = false;
         submitBtn.innerHTML = '<i class="fas fa-paper-plane me-2"></i> Submit Answers';
     });
+}
+
+// Check if NIC has already submitted
+function checkDuplicateSubmission(nic) {
+    return database.ref(`submissions/${paperId}/${nic}`).once('value').then(snapshot => {
+        return snapshot.exists();
+    });
+}
+
+// Update progress bar and steps
+function updateProgress(percent) {
+    progressBar.style.width = `${percent}%`;
+    progressBar.setAttribute('aria-valuenow', percent);
+    
+    steps.forEach(step => {
+        const stepNum = parseInt(step.dataset.step);
+        if (stepNum < currentSection) {
+            step.classList.add('completed');
+            step.classList.remove('active');
+        } else if (stepNum === currentSection) {
+            step.classList.add('active');
+            step.classList.remove('completed');
+        } else {
+            step.classList.remove('active', 'completed');
+        }
+    });
+}
+
+// Show specific section
+function showSection(sectionId) {
+    sections.forEach(section => {
+        if (section.id === sectionId) {
+            section.classList.add('active');
+        } else {
+            section.classList.remove('active');
+        }
+    });
+}
+
+// Navigate to next section
+async function nextSection() {
+    if (currentSection === 1) {
+        // Validate personal info form
+        if (!personalInfoForm.checkValidity()) {
+            personalInfoForm.reportValidity();
+            return;
+        }
+        
+        // Check for duplicate submission
+        const nic = document.getElementById('nic').value.trim();
+        const isDuplicate = await checkDuplicateSubmission(nic);
+        
+        if (isDuplicate) {
+            alert('This NIC has already submitted answers for this paper.');
+            return;
+        }
+        
+        // Load PDF for section 2
+        loadPdf();
+    } else if (currentSection === 2) {
+        // Load questions for section 3
+        loadQuestions();
+    }
+    
+    currentSection++;
+    showSection(`section${currentSection}`);
+    
+    // Update navigation buttons
+    if (currentSection === totalSections) {
+        nextBtn.style.display = 'none';
+        submitBtn.style.display = 'block';
+    } else {
+        nextBtn.style.display = 'block';
+        submitBtn.style.display = 'none';
+    }
+    
+    prevBtn.disabled = false;
+    updateProgress((currentSection / totalSections) * 100);
+}
+
+// Navigate to previous section
+function prevSection() {
+    currentSection--;
+    showSection(`section${currentSection}`);
+    
+    // Update navigation buttons
+    if (currentSection === 1) {
+        prevBtn.disabled = true;
+    }
+    
+    nextBtn.style.display = 'block';
+    submitBtn.style.display = 'none';
+    updateProgress((currentSection / totalSections) * 100);
 }
 
 // Check if user is registered and auto-fill info
@@ -329,11 +465,35 @@ function checkRegisteredUser() {
 
 // Event listeners
 themeToggle.addEventListener('click', toggleTheme);
-answerForm.addEventListener('submit', handleSubmit);
+prevBtn.addEventListener('click', prevSection);
+nextBtn.addEventListener('click', nextSection);
+submitBtn.addEventListener('click', handleSubmit);
+viewResultsBtn.addEventListener('click', () => {
+    const nic = document.getElementById('nic').value.trim();
+    window.location.href = `results.html?paperId=${paperId}&nic=${nic}`;
+});
+
+zoomButtons.forEach(btn => {
+    btn.addEventListener('click', () => handleZoom(btn.dataset.action));
+});
 
 // Initialize page
 document.addEventListener('DOMContentLoaded', () => {
     checkTheme();
     checkRegisteredUser();
-    loadPaperQuestions();
+    loadPaperDetails();
+    updateProgress(33); // Initial progress for first section
+
+    // Prevent right-click and text selection
+    document.addEventListener('contextmenu', e => {
+        if (currentSection === 2) { // Only on PDF view section
+            e.preventDefault();
+        }
+    });
+    
+    document.addEventListener('selectstart', e => {
+        if (currentSection === 2) { // Only on PDF view section
+            e.preventDefault();
+        }
+    });
 });
