@@ -19,7 +19,7 @@
 
         <div class="header text-center mb-4">
             <h1>MCQ Paper Submission</h1>
-            <p class="mb-0">Submit your answers before the time expires</p>
+            <p class="mb-0">Complete all sections to submit your answers</p>
             <button id="themeToggle" class="theme-toggle btn btn-sm btn-outline-secondary mt-2">
                 <i class="fas fa-moon"></i> Toggle Theme
             </button>
@@ -29,53 +29,60 @@
             <i class="fas fa-clock me-2"></i> Time remaining: <span id="timeRemaining">--:--:--</span>
         </div>
 
-        <div class="row justify-content-center">
-            <div class="col-lg-8">
-                <div class="form-container shadow">
-                    <form id="answerForm">
-                        <input type="hidden" id="paperId" value="">
-                        <input type="hidden" id="selectedMedium" value="">
-                        
-                        <!-- Paper Information Header -->
-                        <div class="paper-header bg-light p-3 rounded mb-4">
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <h5 id="paperTitle" class="text-primary">Paper Title</h5>
-                                    <div class="row">
-                                        <div class="col-6">
-                                            <span class="text-muted">Year:</span>
-                                            <span id="paperYear" class="fw-bold">----</span>
-                                        </div>
-                                        <div class="col-6">
-                                            <span class="text-muted">Paper No:</span>
-                                            <span id="paperNumber" class="fw-bold">--</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-md-6 text-md-end">
-                                    <div>
-                                        <span class="text-muted">Subject:</span>
-                                        <span id="paperSubject" class="fw-bold">--------</span>
-                                    </div>
-                                    <div>
-                                        <span class="text-muted">Available Mediums:</span>
-                                        <span id="paperMediums" class="fw-bold">-----</span>
-                                    </div>
-                                </div>
+        <!-- Paper Information Section -->
+        <div class="paper-info card mb-4">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h3 id="paperTitle" class="text-primary mb-3">Paper Title</h3>
+                        <div class="row">
+                            <div class="col-6">
+                                <p><span class="text-muted">Year:</span> <span id="paperYear" class="fw-bold">----</span></p>
+                            </div>
+                            <div class="col-6">
+                                <p><span class="text-muted">Paper No:</span> <span id="paperNumber" class="fw-bold">--</span></p>
                             </div>
                         </div>
-                        
-                        <!-- Medium Selection -->
-                        <div id="mediumSelection" class="mb-4" style="display: none;">
-                            <h5 class="border-bottom pb-2 mb-3 text-primary">Select Medium</h5>
-                            <div class="medium-selector" id="mediumOptions">
-                                <!-- Medium options will be added dynamically -->
-                            </div>
-                        </div>
-                        
-                        <!-- Personal Information Section -->
-                        <div class="personal-info bg-light p-3 rounded mb-4">
-                            <h5 class="border-bottom pb-2 mb-3 text-primary">Personal Information</h5>
+                    </div>
+                    <div class="col-md-6">
+                        <p><span class="text-muted">Subject:</span> <span id="paperSubject" class="fw-bold">--------</span></p>
+                        <p><span class="text-muted">Available Mediums:</span> <span id="paperMediums" class="fw-bold">-----</span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="progress-container mb-4">
+            <div class="progress">
+                <div class="progress-bar" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+            </div>
+            <div class="progress-steps">
+                <div class="step active" data-step="1">
+                    <div class="step-icon">1</div>
+                    <div class="step-label">Personal Info</div>
+                </div>
+                <div class="step" data-step="2">
+                    <div class="step-icon">2</div>
+                    <div class="step-label">View Paper</div>
+                </div>
+                <div class="step" data-step="3">
+                    <div class="step-icon">3</div>
+                    <div class="step-label">Submit Answers</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabbed Sections -->
+        <div class="tabbed-sections">
+            <!-- Section 1: Personal Information -->
+            <div class="section active" id="section1">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="mb-0"><i class="fas fa-user me-2"></i> Personal Information</h3>
+                    </div>
+                    <div class="card-body">
+                        <form id="personalInfoForm">
                             <div class="row">
                                 <div class="col-md-6 mb-3">
                                     <label for="nic" class="form-label">NIC Number*</label>
@@ -145,10 +152,64 @@
                                     <input type="tel" class="form-control" id="phone">
                                 </div>
                             </div>
-                        </div>
 
-                        <div class="mb-4" id="answerSection" style="display: none;">
-                            <h5 class="border-bottom pb-2 mb-3 text-primary">Answer Sheet</h5>
+                            <div class="medium-selection mb-4">
+                                <h5 class="border-bottom pb-2 mb-3 text-primary">Select Paper Medium</h5>
+                                <div class="medium-options">
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="radio" name="medium" id="mediumSinhala" value="sinhala" required>
+                                        <label class="form-check-label" for="mediumSinhala">Sinhala</label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="radio" name="medium" id="mediumEnglish" value="english" required>
+                                        <label class="form-check-label" for="mediumEnglish">English</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 2: View Paper -->
+            <div class="section" id="section2">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="mb-0"><i class="fas fa-file-pdf me-2"></i> View Paper</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="pdf-viewer-container">
+                            <div class="pdf-toolbar">
+                                <button class="btn btn-sm btn-outline-secondary zoom-btn" data-action="zoom-out">
+                                    <i class="fas fa-search-minus"></i>
+                                </button>
+                                <span class="zoom-level">100%</span>
+                                <button class="btn btn-sm btn-outline-secondary zoom-btn" data-action="zoom-in">
+                                    <i class="fas fa-search-plus"></i>
+                                </button>
+                            </div>
+<div class="pdf-viewer" id="pdfViewer">
+    <div id="pdfLoading" class="text-center py-5" style="display: none;">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="mt-2">Loading PDF...</p>
+    </div>
+    <iframe id="pdfFrame" frameborder="0" scrolling="no" style="display: none;"></iframe>
+</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 3: Submit Answers -->
+            <div class="section" id="section3">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="mb-0"><i class="fas fa-check-circle me-2"></i> Submit Answers</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="answer-sheet">
                             <div class="table-responsive">
                                 <table class="answer-table w-100">
                                     <thead>
@@ -167,15 +228,38 @@
                                 </table>
                             </div>
                         </div>
-
-                        <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-primary btn-lg" id="submitBtn" style="display: none;">
-                                <i class="fas fa-paper-plane me-2"></i> Submit Answers
-                            </button>
-                        </div>
-                    </form>
+                    </div>
                 </div>
             </div>
+
+            <!-- Success Message -->
+            <div class="section" id="sectionSuccess" style="display: none;">
+                <div class="card">
+                    <div class="card-body text-center py-5">
+                        <div class="success-icon mb-4">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <h2 class="mb-3">Answers Submitted Successfully!</h2>
+                        <p class="text-muted mb-4">Thank you for completing the paper. Your answers have been recorded.</p>
+                        <button id="viewResultsBtn" class="btn btn-primary">
+                            <i class="fas fa-chart-bar me-2"></i> View Results
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation Buttons -->
+        <div class="navigation-buttons mt-4">
+            <button id="prevBtn" class="btn btn-secondary" disabled>
+                <i class="fas fa-arrow-left me-2"></i> Back
+            </button>
+            <button id="nextBtn" class="btn btn-primary float-end">
+                Next <i class="fas fa-arrow-right ms-2"></i>
+            </button>
+            <button id="submitBtn" class="btn btn-success float-end" style="display: none;">
+                <i class="fas fa-paper-plane me-2"></i> Submit Answers
+            </button>
         </div>
     </div>
 
@@ -183,7 +267,8 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.10.377/pdf.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
     <script src="paper-script.js"></script>
-    <script src="main.js"></script>
 </body>
 </html>
