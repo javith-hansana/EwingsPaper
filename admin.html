@@ -10416,14 +10416,22 @@ function downloadClassRankingsAsPDF(paperTitle, classRankings) {
 }
 
 //Publish All Batches 
-document.getElementById('publishAllForPaperBtn').addEventListener('click', function() {
+document.getElementById('publishAllForPaperBtn').addEventListener('click', function(e) {
+    e.preventDefault();
     const paperId = this.dataset.paperId;
-    publishAllBatchesForPaper(paperId);
+    if (paperId) {
+        publishAllBatchesForPaper(paperId);
+    } else {
+        console.error('No paper ID found');
+        alert('No paper selected');
+    }
 });
 
 async function publishAllBatchesForPaper(paperId) {
-    if (!paperId) {
-        alert('No paper selected');
+    // Validate paperId first
+    if (!paperId || typeof paperId !== 'string' || paperId.trim() === '') {
+        console.error('Invalid paper ID:', paperId);
+        alert('Invalid paper selection');
         return;
     }
 
