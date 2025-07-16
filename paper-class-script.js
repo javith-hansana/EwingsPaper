@@ -10,15 +10,39 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-firebase.initializeApp(firebaseConfig);
-const database = firebase.database();
-const auth = firebase.auth();
-const storage = firebase.storage();
+let database, auth, storage;
+try {
+    firebase.initializeApp(firebaseConfig);
+    console.log("Firebase initialized successfully");
+    
+    database = firebase.database();
+    auth = firebase.auth();
+    storage = firebase.storage();
+} catch (error) {
+    console.error("Firebase initialization error:", error);
+}
 
 // DOM elements
 const themeToggle = document.getElementById('themeToggle');
-const answerForm = document.getElementById('answerForm');
+const prevBtn = document.getElementById('prevBtn');
+const nextBtn = document.getElementById('nextBtn');
+const submitBtn = document.getElementById('submitBtn');
+const progressBar = document.querySelector('.progress-bar');
+const steps = document.querySelectorAll('.step');
+const sections = document.querySelectorAll('.section');
+const personalInfoForm = document.getElementById('personalInfoForm');
 const mcqQuestionsContainer = document.getElementById('mcqQuestionsContainer');
+const essayQuestionsContainer = document.getElementById('essayQuestionsContainer');
+const mediumRadios = document.querySelectorAll('input[name="medium"]');
+
+// Variables
+let currentSection = 1;
+const totalSections = 2;
+let paperId = '';
+let selectedMedium = '';
+let closeTime = null;
+let timerInterval = null;
+let hasEssayQuestions = false;
 
 // Theme toggle functionality
 function toggleTheme() {
@@ -46,36 +70,29 @@ function checkTheme() {
 // Get paper ID from URL
 function getPaperIdFromUrl() {
     const urlParams = new URLSearchParams(window.location.search);
-    return urlParams.get('paperId');
+    const id = urlParams.get('paperId');
+    
+    if (!id) {
+        console.error("No paperId found in URL");
+        alert('This paper link is invalid. Please check the URL and try again.');
+        return null;
+    }
+    
+    console.log("Retrieved paperId from URL:", id);
+    return id;
 }
 
-// Load paper details and questions
-function loadPaperQuestions() {
-    const paperId = getPaperIdFromUrl();
-    console.log("[DEBUG] Paper ID from URL:", paperId, "Type:", typeof paperId);
+// Load paper details
+function loadPaperDetails() {
+    paperId = getPaperIdFromUrl();
     if (!paperId) {
-        console.error("[ERROR] No paper ID found in URL");
         alert('Invalid paper link');
+        window.location.href = 'index.html';
         return;
     }
 
-    const paperPath = `paperClassPapers/${paperId}`;
-    console.log("[DEBUG] Full database path:", paperPath);
-
-    document.getElementById('paperId').value = paperId;
-    const startTime = Date.now();
-
-    // Load paper details
-     database.ref(paperPath).once('value').then(snapshot => {
-        console.log(`[DEBUG] Query completed in ${Date.now() - startTime}ms`);
-        console.log("[DEBUG] Snapshot exists:", snapshot.exists());
-        console.log("[DEBUG] Snapshot value:", snapshot.val());
+    database.ref('paperClassPapers/' + paperId).once('value').then(snapshot => {
         const paper = snapshot.val();
-        if (!snapshot.exists()) {
-            console.error("[ERROR] Paper not found at path:", paperPath);
-            alert('Paper not found');
-            return;
-        }
         if (!paper) {
             alert('Paper not found');
             window.location.href = 'index.html';
@@ -87,47 +104,11 @@ function loadPaperQuestions() {
         document.getElementById('paperYear').textContent = paper.year || '----';
         document.getElementById('paperNumber').textContent = paper.paperNumber || '--';
         document.getElementById('paperSubject').textContent = paper.subject || 'Not specified';
+        document.getElementById('paperMediums').textContent = paper.medium || 'Not specified';
 
-        // Handle multiple mediums
-        let mediums = [];
-        if (paper.mediums) {
-            mediums = paper.mediums;
-            document.getElementById('paperMediums').textContent = mediums.join(', ');
-        } else if (paper.medium) {
-            mediums = [paper.medium];
-            document.getElementById('paperMediums').textContent = paper.medium;
-        } else {
-            document.getElementById('paperMediums').textContent = 'Not specified';
-        }
-
-        // Show medium selection if multiple options
-        if (mediums.length > 1) {
-            const mediumOptions = document.getElementById('mediumOptions');
-            mediumOptions.innerHTML = '';
-            
-            mediums.forEach(medium => {
-                const btn = document.createElement('button');
-                btn.type = 'button';
-                btn.className = 'medium-btn btn btn-outline-primary';
-                btn.textContent = medium;
-                btn.addEventListener('click', () => {
-                    document.querySelectorAll('.medium-btn').forEach(b => b.classList.remove('active'));
-                    btn.classList.add('active');
-                    document.getElementById('selectedMedium').value = medium;
-                    loadQuestionsForMedium(paperId, medium);
-                });
-                mediumOptions.appendChild(btn);
-            });
-            
-            document.getElementById('mediumSelection').style.display = 'block';
-        } else if (mediums.length === 1) {
-            // Only one medium, select it automatically
-            document.getElementById('selectedMedium').value = mediums[0];
-            loadQuestionsForMedium(paperId, mediums[0]);
-        }
-
-        // Set up countdown timer
+        // Set up countdown timer if closeTime exists
         if (paper.closeTime) {
+            closeTime = paper.closeTime;
             setupTimer(paper.closeTime);
         } else {
             document.getElementById('timerSection').style.display = 'none';
@@ -138,97 +119,23 @@ function loadPaperQuestions() {
     });
 }
 
-// Load questions for selected medium
-function loadQuestionsForMedium(paperId, medium) {
-    database.ref(`paperClassPapers/${paperId}/questions`).once('value').then(snapshot => {
-        const allQuestions = snapshot.val() || {};
-        
-        // Filter questions by medium if available
-        let questions = {};
-        if (allQuestions[medium]) {
-            questions = allQuestions[medium];
-        } else {
-            questions = allQuestions;
-        }
-
-        // Check if there are MCQ questions
-        const mcqQuestions = Object.entries(questions).filter(([_, q]) => q.type === 'mcq');
-        const hasMcqQuestions = mcqQuestions.length > 0;
-        
-        // Check if there are essay questions
-        const essayQuestions = Object.entries(questions).filter(([_, q]) => q.type === 'essay');
-        const hasEssayQuestions = essayQuestions.length > 0;
-
-        // Display MCQ answer sheet if there are MCQ questions
-        if (hasMcqQuestions) {
-            document.getElementById('mcqSection').style.display = 'block';
-            
-            // Display MCQ questions
-            mcqQuestionsContainer.innerHTML = '';
-            mcqQuestions.forEach(([qNum, question]) => {
-                const row = document.createElement('tr');
-                row.className = 'question-item';
-                row.dataset.questionNumber = qNum;
-                row.innerHTML = `
-                    <td>${qNum}</td>
-                    <td><input type="radio" class="answer-radio" name="q${qNum}" value="1" ${question.required ? 'required' : ''}></td>
-                    <td><input type="radio" class="answer-radio" name="q${qNum}" value="2" ${question.required ? 'required' : ''}></td>
-                    <td><input type="radio" class="answer-radio" name="q${qNum}" value="3" ${question.required ? 'required' : ''}></td>
-                    <td><input type="radio" class="answer-radio" name="q${qNum}" value="4" ${question.required ? 'required' : ''}></td>
-                    <td><input type="radio" class="answer-radio" name="q${qNum}" value="5" ${question.required ? 'required' : ''}></td>
-                `;
-                mcqQuestionsContainer.appendChild(row);
-            });
-
-            // Add visual feedback for answered questions
-            document.querySelectorAll('.answer-radio').forEach(radio => {
-                radio.addEventListener('change', function() {
-                    const questionNumber = this.name.substring(1);
-                    const questionRow = document.querySelector(`tr[data-question-number="${questionNumber}"]`);
-                    if (questionRow) {
-                        questionRow.classList.add('answered');
-                    }
-                });
-            });
-        } else {
-            document.getElementById('mcqSection').style.display = 'none';
-        }
-
-        // Display essay answer section if there are essay questions
-        if (hasEssayQuestions) {
-            document.getElementById('essaySection').style.display = 'block';
-            document.getElementById('essayAnswers').required = true;
-        } else {
-            document.getElementById('essaySection').style.display = 'none';
-            document.getElementById('essayAnswers').required = false;
-        }
-
-        // Show submit button if there are any questions
-        if (hasMcqQuestions || hasEssayQuestions) {
-            document.getElementById('submitBtn').style.display = 'block';
-        } else {
-            document.getElementById('submitBtn').style.display = 'none';
-            alert('This paper has no questions to answer.');
-        }
-
-    }).catch(error => {
-        console.error('Error loading questions:', error);
-        alert('Error loading questions. Please try again.');
-    });
-}
-
 // Set up countdown timer
 function setupTimer(closeTime) {
     const countDownDate = new Date(closeTime).getTime();
     
-    const timer = setInterval(function() {
+    // Clear any existing timer
+    if (timerInterval) {
+        clearInterval(timerInterval);
+    }
+    
+    timerInterval = setInterval(function() {
         const now = new Date().getTime();
         const distance = countDownDate - now;
         
         if (distance < 0) {
-            clearInterval(timer);
+            clearInterval(timerInterval);
             document.getElementById('timeRemaining').textContent = "TIME EXPIRED";
-            document.getElementById('submitBtn').disabled = true;
+            submitBtn.disabled = true;
             document.getElementById('timerSection').className = 'timer alert alert-danger';
             return;
         }
@@ -248,352 +155,599 @@ function setupTimer(closeTime) {
     }, 1000);
 }
 
+// Load questions for answer section
+function loadQuestions() {
+    database.ref(`paperClassPapers/${paperId}/questions`).once('value').then(snapshot => {
+        const questions = snapshot.val() || {};
+        
+        // Clear existing questions
+        mcqQuestionsContainer.innerHTML = '';
+        essayQuestionsContainer.innerHTML = '';
+        
+        let mcqCount = 0;
+        let essayCount = 0;
+        
+        // Create rows for each question
+        for (const [qNum, question] of Object.entries(questions)) {
+            if (question.type === 'mcq') {
+                mcqCount++;
+                const row = document.createElement('tr');
+                row.className = 'question-item';
+                row.dataset.questionNumber = qNum;
+                row.dataset.questionType = 'mcq';
+                row.innerHTML = `
+                    <td>${qNum}</td>
+                    <td><input type="radio" class="answer-radio" name="q${qNum}" value="1" required></td>
+                    <td><input type="radio" class="answer-radio" name="q${qNum}" value="2" required></td>
+                    <td><input type="radio" class="answer-radio" name="q${qNum}" value="3" required></td>
+                    <td><input type="radio" class="answer-radio" name="q${qNum}" value="4" required></td>
+                    <td><input type="radio" class="answer-radio" name="q${qNum}" value="5" required></td>
+                `;
+                mcqQuestionsContainer.appendChild(row);
+            } else if (question.type === 'essay') {
+                essayCount++;
+                hasEssayQuestions = true;
+                const questionDiv = document.createElement('div');
+                questionDiv.className = 'essay-question mb-4 p-3 border rounded';
+                questionDiv.dataset.questionNumber = qNum;
+                questionDiv.dataset.questionType = 'essay';
+                questionDiv.innerHTML = `
+                    <h6>Question ${qNum} (${question.marks} marks)</h6>
+                    <div class="alert alert-info mb-3">
+                        <i class="fas fa-info-circle me-2"></i> Please upload your answer as a PDF file
+                    </div>
+                    <div class="file-upload-container">
+                        <input type="file" class="form-control essay-answer" id="essay-${qNum}" accept=".pdf" required>
+                        <div class="form-text">Max file size: 5MB</div>
+                    </div>
+                `;
+                essayQuestionsContainer.appendChild(questionDiv);
+            }
+        }
+        
+        // Update instructions based on question types
+        const instructionsText = document.getElementById('instructionsText');
+        if (mcqCount > 0 && essayCount > 0) {
+            instructionsText.textContent = 'Please answer all questions. MCQ questions must be answered here. Essay questions require PDF upload.';
+        } else if (mcqCount > 0) {
+            instructionsText.textContent = 'Please answer all MCQ questions.';
+        } else if (essayCount > 0) {
+            instructionsText.textContent = 'Please upload PDF files for all essay questions.';
+        }
+        
+        // Hide sections if no questions of that type
+        if (mcqCount === 0) {
+            document.getElementById('mcqSection').style.display = 'none';
+        }
+        if (essayCount === 0) {
+            document.getElementById('essaySection').style.display = 'none';
+        }
+    }).catch(error => {
+        console.error('Error loading questions:', error);
+        alert('Error loading questions. Please try again.');
+    });
+}
+
+// Check if user is verified and paid
+// Check if user is verified and paid
+async function checkUserVerification(nic) {
+    try {
+        console.log("Checking verification for NIC:", nic);
+        
+        // First try to find the user by NIC in the users collection
+        const usersRef = database.ref('users');
+        const snapshot = await usersRef.orderByChild('nic').equalTo(nic).once('value');
+        
+        if (!snapshot.exists()) {
+            console.log("User not found with NIC:", nic);
+            return { 
+                verified: false, 
+                paid: false, 
+                message: "User not found in our system. Please register first." 
+            };
+        }
+        
+        // Get the first matching user (assuming NIC is unique)
+        let userData = null;
+        snapshot.forEach(childSnapshot => {
+            userData = childSnapshot.val();
+            return true; // Break after first match
+        });
+        
+        if (!userData) {
+            console.error("Unexpected error: User data not found");
+            return { 
+                verified: false, 
+                paid: false, 
+                message: "Database error. Please try again." 
+            };
+        }
+        
+        console.log("Found user data:", userData);
+        
+        // Check verification status
+        if (!userData.verified) {
+            return { 
+                verified: false, 
+                paid: userData.isPaid || false, 
+                message: "Your account is not verified. Please contact support." 
+            };
+        }
+        
+        // Check payment status
+        if (!userData.isPaid) {
+            return { 
+                verified: true, 
+                paid: false, 
+                message: "Your account is not paid. Please complete payment to submit papers." 
+            };
+        }
+        
+        // User is verified and paid
+        return { verified: true, paid: true, message: "" };
+        
+    } catch (error) {
+        console.error('Error checking user verification:', error);
+        return { 
+            verified: false, 
+            paid: false, 
+            message: "Error verifying your account. Please try again." 
+        };
+    }
+}
+
+// Check for existing submission
+async function checkExistingSubmission(paperId, nic) {
+    try {
+        const submissionSnapshot = await database.ref(`paperClassSubmissions/${paperId}/${nic}`).once('value');
+        return submissionSnapshot.exists();
+    } catch (error) {
+        console.error('Error checking existing submission:', error);
+        return false;
+    }
+}
+
 // Handle form submission
-function handleSubmit(e) {
-    e.preventDefault();
-    
-    const paperId = document.getElementById('paperId').value;
-    const medium = document.getElementById('selectedMedium').value;
+async function handleSubmit() {
+    // Get personal info
     const nic = document.getElementById('nic').value.trim();
     const name = document.getElementById('name').value.trim();
     const district = document.getElementById('district').value;
     const studentClass = document.getElementById('class').value;
     const school = document.getElementById('school').value.trim();
     const phone = document.getElementById('phone').value.trim();
-    const essayFile = document.getElementById('essayAnswers').files[0];
     
-    // Validate required fields
-    if (!nic || !name || !district || !studentClass) {
-        alert('Please fill in all required fields (marked with *)');
+    // Verify user before proceeding
+    const verification = await checkUserVerification(nic);
+    if (!verification.verified || !verification.paid) {
+        showVerificationError(verification.message);
         return;
     }
     
-    // Validate NIC format (example: 123456789V or 200012345678)
-    const nicRegex = /^([0-9]{9}[vVxX]|[0-9]{12})$/;
-    if (!nicRegex.test(nic)) {
-        alert('Please enter a valid NIC number (either 9 digits with V/X or 12 digits)');
+    // Check for existing submission
+    const alreadySubmitted = await checkExistingSubmission(paperId, nic);
+    if (alreadySubmitted) {
+        showVerificationError("You have already submitted this paper. Multiple submissions are not allowed.");
         return;
     }
     
-    if (!medium) {
-        alert('Please select a medium first');
+    // Validate all required questions are answered
+    if (!validateAnswers()) {
+        alert('Please complete all required questions before submitting.');
         return;
-    }
-    
-    // Check if time has expired
-    if (document.getElementById('timeRemaining').textContent === "TIME EXPIRED") {
-        alert('The submission time has expired. Your answers cannot be submitted.');
-        return;
-    }
-    
-    // Check if there are essay questions
-    const hasEssayQuestions = document.getElementById('essaySection').style.display !== 'none';
-    if (hasEssayQuestions) {
-        if (!essayFile) {
-            alert('Please select a file to upload');
-            return;
-        }
-
-        console.log("File validation:", {
-            name: essayFile.name,
-            size: essayFile.size,
-            type: essayFile.type
-        });
-
-        // Validate file extension
-        const fileExtension = essayFile.name.split('.').pop().toLowerCase();
-        if (fileExtension !== 'pdf') {
-            alert('Only PDF files are allowed.');
-            return false;
-        }
-
-        // Validate file size (5MB max)
-        if (essayFile.size > 5 * 1024 * 1024) {
-            alert('File exceeds 5MB limit.');
-            return;
-        }
     }
     
     // Disable submit button to prevent duplicate submissions
-    const submitBtn = document.getElementById('submitBtn');
     submitBtn.disabled = true;
-    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Checking...';
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Submitting...';
     
-    // First check if user is registered and verified by searching for their NIC
-    database.ref('users').orderByChild('nic').equalTo(nic).once('value').then(userSnapshot => {
-        if (!userSnapshot.exists()) {
-            alert('You must be a registered and verified user to submit answers. Please register first.');
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = '<i class="fas fa-paper-plane me-2"></i> Submit Answers';
-            return;
-        }
+    try {
+        // Get all answers
+        const mcqAnswers = {};
+        const essayFiles = [];
         
-        // Check if any of the found users is verified
-        let verified = false;
-        userSnapshot.forEach(childSnapshot => {
-            if (childSnapshot.val().verified) {
-                verified = true;
+        // Process MCQ answers
+        document.querySelectorAll('.question-item[data-question-type="mcq"]').forEach(row => {
+            const qNum = row.dataset.questionNumber;
+            const selectedAnswer = row.querySelector('input[type="radio"]:checked');
+            if (selectedAnswer) {
+                mcqAnswers[qNum] = selectedAnswer.value;
             }
         });
         
-        if (!verified) {
-            alert('Your account is not yet verified. Please wait for verification or contact support.');
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = '<i class="fas fa-paper-plane me-2"></i> Submit Answers';
-            return;
-        }
+        // Process essay answers (upload files)
+        const essayUploadPromises = [];
+        const essayAnswers = {};
         
-        // Then check if this user has already submitted for this paper
-        database.ref(`paperClassSubmissions/${paperId}/${nic}`).once('value').then(submissionSnapshot => {
-            if (submissionSnapshot.exists()) {
-                alert('You have already submitted answers for this paper. Duplicate submissions are not allowed.');
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = '<i class="fas fa-paper-plane me-2"></i> Submit Answers';
-                return;
-            }
+        document.querySelectorAll('.essay-question').forEach(div => {
+            const qNum = div.dataset.questionNumber;
+            const fileInput = div.querySelector('input[type="file"]');
             
-            // If all checks pass, proceed with submission
-            proceedWithSubmission(paperId, medium, nic, name, district, studentClass, school, phone, essayFile, hasEssayQuestions, submitBtn);
-        }).catch(error => {
-            console.error('Error checking existing submission:', error);
-            alert('Error checking submission status. Please try again.');
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = '<i class="fas fa-paper-plane me-2"></i> Submit Answers';
+            if (fileInput.files.length > 0) {
+                const file = fileInput.files[0];
+                essayFiles.push(file);
+                
+                // Create a unique filename
+                const filename = `essay-${paperId}-${nic}-${qNum}-${Date.now()}.pdf`;
+                const storageRef = storage.ref(`paperClassSubmissions/${paperId}/${nic}/${filename}`);
+                
+                // Add upload promise to array
+                essayUploadPromises.push(
+                    storageRef.put(file).then(snapshot => snapshot.ref.getDownloadURL())
+                );
+                
+                // Store question number with promise index
+                essayAnswers[qNum] = {
+                    promiseIndex: essayUploadPromises.length - 1,
+                    filename: filename
+                };
+            }
         });
-    }).catch(error => {
-        console.error('Error checking user registration:', error);
-        alert('Error checking user registration. Please try again.');
+        
+        // Wait for all file uploads to complete
+        const uploadUrls = await Promise.all(essayUploadPromises);
+        
+        // Prepare essay answers with URLs
+        const finalEssayAnswers = {};
+        for (const [qNum, essayInfo] of Object.entries(essayAnswers)) {
+            finalEssayAnswers[qNum] = {
+                url: uploadUrls[essayInfo.promiseIndex],
+                filename: essayInfo.filename
+            };
+        }
+        
+        // Calculate MCQ score
+        const { score, totalMcqMarks } = await calculateMcqScore(mcqAnswers);
+        
+        // Prepare submission data
+        const submission = {
+            name,
+            nic,
+            district,
+            class: studentClass,
+            school: school || '',
+            phone: phone || '',
+            medium: selectedMedium,
+            mcqAnswers,
+            mcqScore: score,
+            totalMcqMarks,
+            essayAnswers: hasEssayQuestions ? finalEssayAnswers : null,
+            timestamp: firebase.database.ServerValue.TIMESTAMP,
+            verified: true,
+            paid: true
+        };
+        
+        // Submit data to database
+        await database.ref(`paperClassSubmissions/${paperId}/${nic}`).set(submission);
+        
+        // Show success section
+        showSuccessSection(score, totalMcqMarks);
+        
+    } catch (error) {
+        console.error('Submission error:', error);
+        alert(`Error: ${error.message}`);
         submitBtn.disabled = false;
         submitBtn.innerHTML = '<i class="fas fa-paper-plane me-2"></i> Submit Answers';
+    }
+}
+
+// Calculate MCQ score
+async function calculateMcqScore(mcqAnswers) {
+    const questionsSnapshot = await database.ref(`paperClassPapers/${paperId}/questions`).once('value');
+    const questions = questionsSnapshot.val() || {};
+    
+    let score = 0;
+    let totalMcqMarks = 0;
+    
+    for (const [qNum, answer] of Object.entries(mcqAnswers)) {
+        const question = questions[qNum];
+        if (question && question.type === 'mcq' && answer === question.answer) {
+            score += question.marks || 0;
+        }
+        if (question && question.type === 'mcq') {
+            totalMcqMarks += question.marks || 0;
+        }
+    }
+    
+    return { score, totalMcqMarks };
+}
+
+// Validate all required answers
+function validateAnswers() {
+    // Validate MCQ answers
+    const mcqQuestions = document.querySelectorAll('.question-item[data-question-type="mcq"]');
+    for (const row of mcqQuestions) {
+        const qNum = row.dataset.questionNumber;
+        const isAnswered = row.querySelector('input[type="radio"]:checked') !== null;
+        if (!isAnswered) {
+            alert(`Please answer MCQ question ${qNum}`);
+            return false;
+        }
+    }
+    
+    // Validate essay answers
+    const essayQuestions = document.querySelectorAll('.essay-question');
+    for (const div of essayQuestions) {
+        const qNum = div.dataset.questionNumber;
+        const fileInput = div.querySelector('input[type="file"]');
+        if (fileInput.files.length === 0) {
+            alert(`Please upload PDF for essay question ${qNum}`);
+            return false;
+        }
+        
+        // Check file size (max 5MB)
+        if (fileInput.files[0].size > 5 * 1024 * 1024) {
+            alert(`File for question ${qNum} is too large. Max size is 5MB.`);
+            return false;
+        }
+    }
+    
+    return true;
+}
+
+// Show verification error
+function showVerificationError(message) {
+    document.getElementById('verificationErrorText').textContent = message;
+    showSection('sectionVerificationError');
+    updateProgress(100);
+    prevBtn.style.display = 'none';
+    nextBtn.style.display = 'none';
+    submitBtn.style.display = 'none';
+}
+
+// Show success section
+function showSuccessSection(score, totalPossible) {
+    document.getElementById('sectionSuccess').innerHTML = `
+        <div class="card">
+            <div class="card-body text-center py-5">
+                <div class="success-icon mb-4">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <h2 class="mb-3">Answers Submitted Successfully!</h2>
+                ${totalPossible > 0 ? `
+                <p class="text-muted mb-3">Your MCQ score: ${score} out of ${totalPossible} points.</p>
+                <div class="d-flex justify-content-center mb-4">
+                    <div class="progress" style="height: 20px; width: 80%;">
+                        <div class="progress-bar bg-success" role="progressbar" 
+                             style="width: ${(score/totalPossible)*100}%" 
+                             aria-valuenow="${(score/totalPossible)*100}" 
+                             aria-valuemin="0" aria-valuemax="100">
+                            ${Math.round((score/totalPossible)*100)}%
+                        </div>
+                    </div>
+                </div>
+                ` : ''}
+                <p class="text-muted mb-4">Thank you for completing the paper. Your answers have been recorded.</p>
+            </div>
+        </div>
+    `;
+    
+    showSection('sectionSuccess');
+    updateProgress(100);
+    prevBtn.style.display = 'none';
+    nextBtn.style.display = 'none';
+    submitBtn.style.display = 'none';
+}
+
+// Update progress bar and steps
+function updateProgress(percent) {
+    progressBar.style.width = `${percent}%`;
+    progressBar.setAttribute('aria-valuenow', percent);
+    
+    steps.forEach(step => {
+        const stepNum = parseInt(step.dataset.step);
+        if (stepNum < currentSection) {
+            step.classList.add('completed');
+            step.classList.remove('active');
+        } else if (stepNum === currentSection) {
+            step.classList.add('active');
+            step.classList.remove('completed');
+        } else {
+            step.classList.remove('active', 'completed');
+        }
     });
 }
 
-function proceedWithSubmission(paperId, medium, nic, name, district, studentClass, school, phone, essayFile, hasEssayQuestions, submitBtn) {
-    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Submitting...';
+// Show specific section
+function showSection(sectionId) {
+    sections.forEach(section => {
+        if (section.id === sectionId) {
+            section.classList.add('active');
+            section.style.display = 'block';
+        } else {
+            section.classList.remove('active');
+            section.style.display = 'none';
+        }
+    });
     
-    // Prepare submission data
-    const submission = {
-        name,
-        nic,
-        district,
-        class: studentClass,
-        school: school || '',
-        phone: phone || '',
-        medium,
-        timestamp: firebase.database.ServerValue.TIMESTAMP,
-        submittedAt: new Date().toISOString(),
-        verified: true
-    };
+    // Update button visibility based on current section
+    updateButtonVisibility();
+}
+
+function updateButtonVisibility() {
+    // Always show prev button unless on first section
+    prevBtn.style.display = currentSection === 1 ? 'none' : 'block';
     
-    // Get MCQ answers if there are MCQ questions
-    const hasMcqQuestions = document.getElementById('mcqSection').style.display !== 'none';
-    if (hasMcqQuestions) {
-        const mcqAnswers = {};
-        const questionInputs = document.querySelectorAll('input[type="radio"]:checked');
-        
-        // Check if all required MCQ questions are answered
-        const requiredQuestions = document.querySelectorAll('input[type="radio"][required]');
-        const answeredRequiredQuestions = document.querySelectorAll('input[type="radio"][required]:checked');
-        
-        if (requiredQuestions.length > 0 && answeredRequiredQuestions.length !== requiredQuestions.length) {
-            alert('Please answer all required MCQ questions');
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = '<i class="fas fa-paper-plane me-2"></i> Submit Answers';
+    // Show next button except on last section
+    nextBtn.style.display = currentSection >= totalSections ? 'none' : 'block';
+    
+    // Only show submit button on last section
+    submitBtn.style.display = currentSection === totalSections ? 'block' : 'none';
+    
+    // Disable prev button on first section
+    prevBtn.disabled = currentSection === 1;
+}
+
+// Navigate to next section
+function nextSection() {
+    if (currentSection >= totalSections) return;
+    
+    // Validation for current section
+    if (currentSection === 1 && !personalInfoForm.checkValidity()) {
+        personalInfoForm.reportValidity();
+        return;
+    }
+    
+    // Load questions if moving to section 2 (Submit Answers)
+    if (currentSection === 1) {
+        const medium = document.querySelector('input[name="medium"]:checked');
+        if (!medium) {
+            alert('Please select a medium first');
             return;
         }
-        
-        questionInputs.forEach(input => {
-            const qNum = input.name.substring(1);
-            mcqAnswers[qNum] = input.value;
-        });
-        
-        submission.mcqAnswers = mcqAnswers;
-    }
-
-    // If no essay file is needed, save directly
-    if (!hasEssayQuestions) {
-        saveSubmission(paperId, nic, submission, submitBtn);
-        return;
-    }
-
-    // Validate essay file before upload
-    if (!essayFile) {
-        alert('Please select a file to upload');
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = '<i class="fas fa-paper-plane me-2"></i> Submit Answers';
-        return;
-    }
-
-    if (essayFile.size === 0) {
-        alert('The selected file is empty. Please choose a valid file.');
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = '<i class="fas fa-paper-plane me-2"></i> Submit Answers';
-        return;
-    }
-
-    // Check file type with more flexible validation
-    const validExtensions = ['application/pdf', 'pdf', 'application/octet-stream'];
-    const fileExtension = essayFile.name.split('.').pop().toLowerCase();
-    if (!validExtensions.includes(essayFile.type.toLowerCase())) {
-        // Fallback check for file extension
-        if (fileExtension !== 'pdf') {
-            alert('Please upload a valid PDF file.');
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = '<i class="fas fa-paper-plane me-2"></i> Submit Answers';
-            return;
-        }
-    }
-
-    // Check file size (5MB max)
-    const MAX_FILE_SIZE = 5 * 1024 * 1024;
-    if (essayFile.size > MAX_FILE_SIZE) {
-        alert('File is too large. Maximum size is 5MB.');
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = '<i class="fas fa-paper-plane me-2"></i> Submit Answers';
-        return;
-    }
-
-    // Generate a unique filename with timestamp and original filename
-    const timestamp = new Date().getTime();
-    const filename = `${timestamp}_${essayFile.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
-    
-    // Proceed with file upload
-    const storageRef = storage.ref(`paperClassSubmissions/${paperId}/${nic}/${filename}`);
-    retryCount = 0; // Reset retry counter
-    uploadWithRetry(storageRef, essayFile, submission, paperId, nic, submitBtn);
-}
-
-
-function handleUploadError(error, submitBtn) {
-    let errorMessage = 'Error uploading file: ';
-    
-    switch(error.code) {
-        case 'storage/unauthorized':
-            errorMessage += 'You don\'t have permission to upload files.';
-            break;
-        case 'storage/canceled':
-            errorMessage += 'Upload was canceled.';
-            break;
-        case 'storage/unknown':
-            errorMessage += 'Unknown error occurred. Please check your internet connection.';
-            break;
-        case 'storage/quota-exceeded':
-            errorMessage += 'Storage quota exceeded. Contact support.';
-            break;
-        case 'storage/unauthenticated':
-            errorMessage += 'Authentication required. Please refresh the page and try again.';
-            break;
-        default:
-            errorMessage += error.message || 'Please try again.';
+        selectedMedium = medium.value;
+        loadQuestions();
     }
     
-    alert(errorMessage);
-    submitBtn.disabled = false;
-    submitBtn.innerHTML = '<i class="fas fa-paper-plane me-2"></i> Submit Answers';
+    currentSection++;
+    showSection(`section${currentSection}`);
+    updateProgress((currentSection / totalSections) * 100);
 }
 
-// Save submission to database
-function saveSubmission(paperId, nic, submission, submitBtn) {
-    database.ref(`paperClassSubmissions/${paperId}/${nic}`).set(submission)
-        .then(() => {
-            alert('Answers submitted successfully!');
-            window.location.href = `results.html?paperId=${paperId}&nic=${nic}`;
-        })
-        .catch(error => {
-            console.error('Submission error:', error);
-            alert(`Error: ${error.message}`);
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = '<i class="fas fa-paper-plane me-2"></i> Submit Answers';
-        });
+function prevSection() {
+    if (currentSection <= 1) return;
+    
+    currentSection--;
+    showSection(`section${currentSection}`);
+    updateProgress((currentSection / totalSections) * 100);
 }
+
 // Check if user is registered and auto-fill info
-function checkRegisteredUser() {
+async function checkRegisteredUser() {
     const nic = localStorage.getItem('userNIC');
     if (nic) {
-        // Search users by NIC instead of UID
-        database.ref('users').orderByChild('nic').equalTo(nic).once('value').then(snapshot => {
-            if (snapshot.exists()) {
-                snapshot.forEach(userSnapshot => {
-                    const user = userSnapshot.val();
-                    document.getElementById('nic').value = nic;
-                    document.getElementById('name').value = user.name || '';
-                    document.getElementById('district').value = user.district || '';
-                    document.getElementById('class').value = user.class || '';
-                    document.getElementById('school').value = user.school || '';
-                    document.getElementById('phone').value = user.phone || '';
-                });
+        const usersRef = database.ref('users');
+        const snapshot = await usersRef.orderByChild('nic').equalTo(nic).once('value');
+        
+        if (snapshot.exists()) {
+            let userData = null;
+            snapshot.forEach(childSnapshot => {
+                userData = childSnapshot.val();
+                return true; // Break after first match
+            });
+            
+            if (userData) {
+                document.getElementById('nic').value = nic;
+                document.getElementById('name').value = userData.name || '';
+                document.getElementById('district').value = userData.district || '';
+                document.getElementById('class').value = userData.class || '';
+                document.getElementById('school').value = userData.school || '';
+                document.getElementById('phone').value = userData.phone || '';
             }
-        });
+        }
     }
 }
 
-let retryCount = 0;
-const maxRetries = 3;
-
-function uploadWithRetry(storageRef, file, submission, paperId, nic, submitBtn) {
-    console.log("Starting upload...");
-    
-    // Add metadata to ensure proper content type
-    const metadata = {
-        contentType: 'application/pdf'
-    };
-    
-    const uploadTask = storageRef.put(file, metadata);
-    
-    uploadTask.on('state_changed',
-        (snapshot) => {
-            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-            console.log(`Upload progress: ${progress.toFixed(2)}%`);
-            submitBtn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Uploading ${Math.round(progress)}%...`;
-            
-            // Force UI update
-            setTimeout(() => {}, 0);
-        },
-        (error) => {
-            console.error("Upload error details:", {
-                code: error.code,
-                message: error.message,
-                name: error.name,
-                serverResponse: error.serverResponse
-            });
-            
-            if (retryCount < maxRetries) {
-                retryCount++;
-                console.log(`Retrying upload (attempt ${retryCount})...`);
-                setTimeout(() => uploadWithRetry(storageRef, file, submission, paperId, nic, submitBtn), 2000);
-            } else {
-                handleUploadError(error, submitBtn);
-            }
-        },
-        () => {
-            uploadTask.snapshot.ref.getDownloadURL().then((downloadURL) => {
-                console.log("File available at", downloadURL);
-                submission.essayAnswersUrl = downloadURL;
-                saveSubmission(paperId, nic, submission, submitBtn);
-            });
-        }
-    );
-}
-
-auth.onAuthStateChanged((user) => {
-  if (user) {
-    // User is signed in
-    console.log("User is authenticated:", user.uid);
-  } else {
-    // No user is signed in
-    console.log("No user signed in");
-    // You might want to redirect to login here
-  }
-});
-
-// Event listeners
-themeToggle.addEventListener('click', toggleTheme);
-answerForm.addEventListener('submit', handleSubmit);
-
 // Initialize page
-document.addEventListener('DOMContentLoaded', () => {
+function initializePage() {
     checkTheme();
     checkRegisteredUser();
-    loadPaperQuestions();
-});
+    loadPaperDetails();
+    updateProgress(50); // Initial progress for first section
+    prevBtn.disabled = true;
 
+    // Initialize buttons
+    updateButtonVisibility();
+    
+    // Get paperId first
+    paperId = getPaperIdFromUrl();
+    if (!paperId) {
+        // Show error but don't redirect (let the user see the error)
+        return;
+    }
+
+    console.log("Initialization complete");
+}
+
+// Event Listeners
+function setupEventListeners() {
+    // Theme toggle
+    themeToggle.addEventListener('click', toggleTheme);
+    
+    // Navigation buttons
+    nextBtn.addEventListener('click', nextSection);
+    prevBtn.addEventListener('click', prevSection);
+    
+    // Submit button
+    submitBtn.addEventListener('click', handleSubmit);
+    
+    // Back to info button from verification error
+    document.getElementById('backToInfoBtn')?.addEventListener('click', () => {
+        currentSection = 1;
+        showSection('section1');
+        updateProgress(50);
+        updateButtonVisibility();
+    });
+    
+    // Medium selection radios
+    mediumRadios.forEach(radio => {
+        radio.addEventListener('change', function() {
+            selectedMedium = this.value;
+        });
+    });
+    
+    // Prevent form submission on enter key
+    personalInfoForm.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+        }
+    });
+}
+
+// Form validation feedback
+function setupFormValidation() {
+    personalInfoForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        nextSection();
+    });
+    
+    // Add validation feedback
+    const formInputs = personalInfoForm.querySelectorAll('input, select');
+    formInputs.forEach(input => {
+        input.addEventListener('invalid', function() {
+            this.classList.add('is-invalid');
+        });
+        
+        input.addEventListener('input', function() {
+            if (this.checkValidity()) {
+                this.classList.remove('is-invalid');
+            }
+        });
+    });
+}
+
+// Initialize file upload validation
+function setupFileUploadValidation() {
+    document.addEventListener('change', function(e) {
+        if (e.target.classList.contains('essay-answer')) {
+            const fileInput = e.target;
+            const file = fileInput.files[0];
+            
+            if (file) {
+                // Check file size
+                if (file.size > 5 * 1024 * 1024) { // 5MB
+                    fileInput.classList.add('is-invalid');
+                    alert('File size exceeds 5MB limit. Please choose a smaller file.');
+                    fileInput.value = ''; // Clear the input
+                } else if (file.type !== 'application/pdf') {
+                    fileInput.classList.add('is-invalid');
+                    alert('Only PDF files are accepted.');
+                    fileInput.value = ''; // Clear the input
+                } else {
+                    fileInput.classList.remove('is-invalid');
+                }
+            }
+        }
+    });
+}
+
+// Main initialization
+document.addEventListener('DOMContentLoaded', function() {
+    initializePage();
+    setupEventListeners();
+    setupFormValidation();
+    setupFileUploadValidation();
+    
+    // Show first section
+    showSection('section1');
+});
