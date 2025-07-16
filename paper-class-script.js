@@ -356,33 +356,37 @@ async function handleSubmit() {
         });
         
         // Process essay answers (upload files)
-        const essayUploadPromises = [];
-        const essayAnswers = {};
+const essayUploadPromises = [];
+const essayAnswers = {};
+
+document.querySelectorAll('.essay-question').forEach(div => {
+    const qNum = div.dataset.questionNumber;
+    const fileInput = div.querySelector('input[type="file"]');
+    
+    if (fileInput.files.length > 0) {
+        const file = fileInput.files[0];
+        essayFiles.push(file);
         
-        document.querySelectorAll('.essay-question').forEach(div => {
-            const qNum = div.dataset.questionNumber;
-            const fileInput = div.querySelector('input[type="file"]');
-            
-            if (fileInput.files.length > 0) {
-                const file = fileInput.files[0];
-                essayFiles.push(file);
-                
-                // Create a unique filename
-                const filename = `essay-${paperId}-${nic}-${qNum}-${Date.now()}.pdf`;
-                const storageRef = storage.ref(`paperClassSubmissions/${paperId}/${nic}/${filename}`);
-                
-                // Add upload promise to array
-                essayUploadPromises.push(
-                    storageRef.put(file).then(snapshot => snapshot.ref.getDownloadURL())
-                );
-                
-                // Store question number with promise index
-                essayAnswers[qNum] = {
-                    promiseIndex: essayUploadPromises.length - 1,
-                    filename: filename
-                };
-            }
-        });
+        const filename = `essay-${paperId}-${nic}-${qNum}-${Date.now()}.pdf`;
+        const storageRef = storage.ref(`paperClassSubmissions/${paperId}/${nic}/${filename}`);
+        
+        // Add upload promise with error handling
+        const uploadPromise = storageRef.put(file)
+            .then(snapshot => {
+                return snapshot.ref.getDownloadURL();
+            })
+            .catch(error => {
+                console.error(`Error uploading essay for question ${qNum}:`, error);
+                throw new Error(`Failed to upload essay for question ${qNum}`);
+            });
+        
+        essayUploadPromises.push(uploadPromise);
+        essayAnswers[qNum] = {
+            promiseIndex: essayUploadPromises.length - 1,
+            filename: filename
+        };
+    }
+});
         
         // Wait for all file uploads to complete
         const uploadUrls = await Promise.all(essayUploadPromises);
@@ -724,18 +728,27 @@ function setupFileUploadValidation() {
             const file = fileInput.files[0];
             
             if (file) {
-                // Check file size
-                if (file.size > 5 * 1024 * 1024) { // 5MB
+                // Clear previous validation
+                fileInput.classList.remove('is-invalid', 'is-valid');
+                
+                // Check file size (5MB limit)
+                if (file.size > 5 * 1024 * 1024) {
                     fileInput.classList.add('is-invalid');
                     alert('File size exceeds 5MB limit. Please choose a smaller file.');
-                    fileInput.value = ''; // Clear the input
-                } else if (file.type !== 'application/pdf') {
+                    fileInput.value = '';
+                    return;
+                }
+                
+                // Check file type
+                if (file.type !== 'application/pdf') {
                     fileInput.classList.add('is-invalid');
                     alert('Only PDF files are accepted.');
-                    fileInput.value = ''; // Clear the input
-                } else {
-                    fileInput.classList.remove('is-invalid');
+                    fileInput.value = '';
+                    return;
                 }
+                
+                // If all checks pass
+                fileInput.classList.add('is-valid');
             }
         }
     });
