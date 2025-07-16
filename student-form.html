@@ -24,6 +24,35 @@
             </div>
         </div>
 
+<div class="form-container" id="studentVerificationSection" style="display: none;">
+    <h4 class="mb-3">Student Verification</h4>
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle"></i> Please verify your student details to access this form.
+    </div>
+    
+    <div class="mb-3">
+        <label for="studentNIC" class="form-label">NIC Number <span class="text-danger">*</span></label>
+        <input type="text" class="form-control" id="studentNIC" required>
+        <div class="invalid-feedback">Please provide your NIC number</div>
+    </div>
+    
+    <div class="mb-3">
+        <label for="studentEmail" class="form-label">Email <span class="text-danger">*</span></label>
+        <input type="email" class="form-control" id="studentEmail" required>
+        <div class="invalid-feedback">Please provide a valid email</div>
+    </div>
+    
+    <button class="btn btn-primary" id="verifyStudentBtn">
+        <i class="fas fa-check-circle"></i> Verify Student
+    </button>
+</div>
+
+<div class="student-info" id="studentInfoSection" style="display: none;">
+    <h5><i class="fas fa-user-graduate"></i> Student Information</h5>
+    <p><strong>NIC:</strong> <span id="verifiedNIC"></span></p>
+    <p><strong>Email:</strong> <span id="verifiedEmail"></span></p>
+</div>
+
         <div class="header text-center mb-4">
             <h1 id="formTitle">Loading Form...</h1>
             <p class="mb-0" id="formDescription"></p>
@@ -156,6 +185,11 @@ const loginBtn = document.getElementById('loginBtn');
 const loginSpinner = document.getElementById('loginSpinner');
 const loginBtnText = document.getElementById('loginBtnText');
 const themeToggle = document.getElementById('themeToggle');
+const studentVerificationSection = document.getElementById('studentVerificationSection');
+const verifyStudentBtn = document.getElementById('verifyStudentBtn');
+const studentInfoSection = document.getElementById('studentInfoSection');
+const verifiedNIC = document.getElementById('verifiedNIC');
+const verifiedEmail = document.getElementById('verifiedEmail');
 
 // Global variables
 let formData = null;
@@ -192,6 +226,16 @@ document.addEventListener('DOMContentLoaded', function() {
         formContainer.style.display = 'block';
         window.scrollTo(0, 0);
     });
+
+    verifyStudentBtn.addEventListener('click', verifyStudent);
+    
+    // Check if already verified in this session
+    if (sessionStorage.getItem(`studentVerified_${formId}`) === 'true') {
+        studentVerificationSection.style.display = 'none';
+        studentInfoSection.style.display = 'block';
+        verifiedNIC.textContent = sessionStorage.getItem(`studentNIC_${formId}`);
+        verifiedEmail.textContent = sessionStorage.getItem(`studentEmail_${formId}`);
+    }
 
     // Theme toggle
     themeToggle.addEventListener('click', toggleTheme);
@@ -240,23 +284,30 @@ async function loadForm() {
             return;
         }
 
-        // Check if login is required
-        if (formData.requireLogin && !currentUser) {
-            showLoginModal();
-            return;
-        }
-
         // Display form info
         formTitle.textContent = formData.title;
         formDescription.textContent = formData.description || '';
         
+        // Check if form is for students only
         if (formData.access === 'students') {
             formInfo.style.display = 'block';
             formInfoText.textContent = 'This form is only for our students';
+            
+            // Hide main form and show verification section
+            formContainer.style.display = 'none';
+            studentVerificationSection.style.display = 'block';
+            
+            // If user is logged in, try to auto-fill student info
+            if (currentUser) {
+                document.getElementById('studentEmail').value = currentUser.email;
+                verifyStudent();
+            }
+        } else {
+            // For non-student forms, proceed normally
+            studentVerificationSection.style.display = 'none';
+            formContainer.style.display = 'block';
+            renderQuestions();
         }
-
-        // Render questions
-        renderQuestions();
 
         // Update progress bar
         updateProgressBar();
@@ -264,6 +315,75 @@ async function loadForm() {
     } catch (error) {
         console.error('Error loading form:', error);
         showError('Failed to load form. Please try again later.');
+    }
+}
+
+async function verifyStudent() {
+    const nic = document.getElementById('studentNIC').value.trim();
+    const email = document.getElementById('studentEmail').value.trim();
+    
+    // Basic validation
+    if (!nic || !email) {
+        alert('Please fill in both NIC and email fields');
+        return;
+    }
+    
+    try {
+        verifyStudentBtn.disabled = true;
+        verifyStudentBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Verifying...';
+        
+        // Check if this is a valid student
+        let studentFound = false;
+        
+        // First check if logged in user matches the email
+        if (currentUser && currentUser.email === email) {
+            const userSnapshot = await database.ref(`users/${currentUser.uid}`).once('value');
+            if (userSnapshot.exists()) {
+                const userData = userSnapshot.val();
+                if (userData.nic === nic) {
+                    studentFound = true;
+                }
+            }
+        }
+        
+        // If not found via logged in user, check all students
+        if (!studentFound) {
+            const studentsSnapshot = await database.ref('users').once('value');
+            studentsSnapshot.forEach(childSnapshot => {
+                const studentData = childSnapshot.val();
+                if (studentData.nic === nic && studentData.email === email) {
+                    studentFound = true;
+                    return true; // Break the loop
+                }
+            });
+        }
+        
+        if (studentFound) {
+            // Student verified - show form
+            studentVerificationSection.style.display = 'none';
+            studentInfoSection.style.display = 'block';
+            formContainer.style.display = 'block';
+            
+            // Display verified info
+            verifiedNIC.textContent = nic;
+            verifiedEmail.textContent = email;
+            
+            // Render questions
+            renderQuestions();
+            
+            // Store verification in session
+            sessionStorage.setItem(`studentVerified_${formId}`, 'true');
+            sessionStorage.setItem(`studentNIC_${formId}`, nic);
+            sessionStorage.setItem(`studentEmail_${formId}`, email);
+        } else {
+            alert('Student verification failed. Please check your NIC and email or contact support.');
+        }
+    } catch (error) {
+        console.error('Verification error:', error);
+        alert('Error during verification. Please try again.');
+    } finally {
+        verifyStudentBtn.disabled = false;
+        verifyStudentBtn.innerHTML = '<i class="fas fa-check-circle"></i> Verify Student';
     }
 }
 
@@ -1011,6 +1131,13 @@ async function handleFormSubmission(e) {
             submitFormBtn.disabled = false;
             submitFormBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Form';
             return;
+        }
+
+        if (formData.access === 'students') {
+            submissionData.nic = sessionStorage.getItem(`studentNIC_${formId}`) || 
+                                document.getElementById('studentNIC').value.trim();
+            submissionData.email = sessionStorage.getItem(`studentEmail_${formId}`) || 
+                                  document.getElementById('studentEmail').value.trim();
         }
 
         // Prepare submission data
