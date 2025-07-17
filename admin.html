@@ -2001,6 +2001,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <!-- Optional: jsPDF AutoTable plugin for tables -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <!-- Load jQuery first if needed -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="main.js"></script>
@@ -9326,9 +9328,19 @@ function applyFormTemplate(template) {
     });
 }
 
-// Add this to your initialization code
-function initFormSections() {
-    // Initialize form creation section
+// Initialize form section
+function initFormSection() {
+    // Initialize dropdown toggles
+    const dropdownToggleList = [].slice.call(document.querySelectorAll('[data-bs-toggle="dropdown"]'));
+    dropdownToggleList.forEach(function (dropdownToggle) {
+        dropdownToggle.addEventListener('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            new bootstrap.Dropdown(dropdownToggle).toggle();
+        });
+    });
+
+    // Add question from dropdown
     document.querySelectorAll('.dropdown-menu a[data-type]').forEach(item => {
         item.addEventListener('click', function(e) {
             e.preventDefault();
@@ -9337,7 +9349,7 @@ function initFormSections() {
         });
     });
 
-    // Initialize form templates
+    // Initialize template buttons
     document.getElementById('templateSurveyBtn').addEventListener('click', (e) => {
         e.preventDefault();
         applyFormTemplate(formTemplates.survey);
@@ -9353,17 +9365,21 @@ function initFormSections() {
         applyFormTemplate(formTemplates.quiz);
     });
 
-    // Initialize form submission filtering
-    document.getElementById('formSubmissionFilterBtn').addEventListener('click', loadFormSubmissionForms);
-    document.getElementById('applyFiltersBtn').addEventListener('click', applySubmissionFilters);
-    document.getElementById('resetFiltersBtn').addEventListener('click', resetSubmissionFilters);
+    // Initialize any existing questions
+    document.querySelectorAll('#formQuestionsContainer .question-item').forEach(questionDiv => {
+        initQuestionElements(questionDiv);
+    });
 }
 
-// Call this when the page loads and when forms tab is clicked
-document.addEventListener('DOMContentLoaded', initFormSections);
-document.getElementById('viewFormsTab').addEventListener('click', initFormSections);
-document.getElementById('viewFormSubmissionsTab').addEventListener('click', initFormSections);
+// Call this when the forms section is shown
+document.getElementById('generalFormsTab').addEventListener('click', initFormSection);
+document.getElementById('viewFormsTab').addEventListener('click', initFormSection);
+document.getElementById('viewFormSubmissionsTab').addEventListener('click', initFormSection);
 
+// Also call it if the section is already visible
+if (document.getElementById('generalFormsSection').style.display !== 'none') {
+    initFormSection();
+}
 
 //====================================
 //paper class rankings
@@ -11096,6 +11112,8 @@ async function deleteDiscussion(discussionId, discussionTitle) {
 
 // Initialize the discussion section when the page loads
 initDiscussionSection();
+
+
 </script>
 
 </body>
