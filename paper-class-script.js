@@ -4,7 +4,7 @@ const firebaseConfig = {
     authDomain: "paper-class-1ab19.firebaseapp.com",
     databaseURL: "https://paper-class-1ab19-default-rtdb.firebaseio.com",
     projectId: "paper-class-1ab19",
-    storageBucket: "paper-class-1ab19.appspot.com",
+    storageBucket: "paper-class-1ab19.firebasestorage.app",
     messagingSenderId: "83634677566",
     appId: "1:83634677566:web:fb4f7a1fd869c3e82e2e6f"
 };
