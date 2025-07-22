@@ -4,7 +4,7 @@ const firebaseConfig = {
     authDomain: "paper-class-1ab19.firebaseapp.com",
     databaseURL: "https://paper-class-1ab19-default-rtdb.firebaseio.com",
     projectId: "paper-class-1ab19",
-    storageBucket: "paper-class-1ab19.appspot.com",
+    storageBucket: "paper-class-1ab19.firebasestorage.app",
     messagingSenderId: "83634677566",
     appId: "1:83634677566:web:fb4f7a1fd869c3e82e2e6f"
 };
@@ -33,24 +33,37 @@ try {
 
 // DOM elements
 const themeToggle = document.getElementById('themeToggle');
-const prevBtn = document.getElementById('prevBtn');
-const nextBtn = document.getElementById('nextBtn');
+const prevBtns = document.querySelectorAll('#prevBtn');
+const nextBtns = document.querySelectorAll('#nextBtn');
 const submitBtn = document.getElementById('submitBtn');
-const viewResultsBtn = document.getElementById('viewResultsBtn');
 const progressBar = document.querySelector('.progress-bar');
 const steps = document.querySelectorAll('.step');
 const sections = document.querySelectorAll('.section');
 const personalInfoForm = document.getElementById('personalInfoForm');
 const questionsContainer = document.getElementById('questionsContainer');
 const mediumRadios = document.querySelectorAll('input[name="medium"]');
+const prevPageBtn = document.getElementById('prevPage');
+const nextPageBtn = document.getElementById('nextPage');
+const zoomInBtn = document.getElementById('zoomInBtn');
+const zoomOutBtn = document.getElementById('zoomOutBtn');
+const pageNumSpan = document.getElementById('pageNum');
 
 // Variables
 let currentSection = 1;
-const totalSections = 2;
+const totalSections = 3;
 let paperId = '';
 let selectedMedium = '';
 let closeTime = null;
 let timerInterval = null;
+
+// PDF Viewer Variables
+let pdfDoc = null,
+    pageNum = 1,
+    pageRendering = false,
+    pageNumPending = null,
+    scale = 1.0,
+    canvas = document.getElementById('pdfCanvas'),
+    ctx = canvas.getContext('2d');
 
 // Theme toggle functionality
 function toggleTheme() {
@@ -127,6 +140,105 @@ function loadPaperDetails() {
         console.error('Error loading paper:', error);
         alert('Error loading paper. Please try again.');
     });
+}
+
+// Load PDF using pdf.js
+function loadPaperPDF() {
+    if (!paperId || !selectedMedium) return;
+    
+    const pdfPath = `papers/${paperId}/paper-${selectedMedium}.pdf`;
+    const storageRef = storage.ref();
+    
+    storageRef.child(pdfPath).getDownloadURL().then(url => {
+        // Load PDF using pdf.js
+        pdfjsLib.getDocument(url).promise.then(function(pdfDoc_) {
+            pdfDoc = pdfDoc_;
+            pageNum = 1;
+            pageNumSpan.textContent = `Page 1 of ${pdfDoc.numPages}`;
+            
+            // Enable/disable page buttons
+            prevPageBtn.disabled = true;
+            nextPageBtn.disabled = pdfDoc.numPages <= 1;
+            
+            // Render the first page
+            renderPage(1);
+        }).catch(error => {
+            console.error('Error loading PDF:', error);
+            alert('Error loading PDF. Please try again.');
+        });
+    }).catch(error => {
+        console.error('Error getting PDF URL:', error);
+        alert('Error loading paper PDF. Please try again.');
+    });
+}
+
+// Render a PDF page
+function renderPage(num) {
+    pageRendering = true;
+    
+    pdfDoc.getPage(num).then(function(page) {
+        const viewport = page.getViewport({ scale: scale });
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
+        
+        const renderContext = {
+            canvasContext: ctx,
+            viewport: viewport
+        };
+        
+        const renderTask = page.render(renderContext);
+        
+        renderTask.promise.then(function() {
+            pageRendering = false;
+            if (pageNumPending !== null) {
+                renderPage(pageNumPending);
+                pageNumPending = null;
+            }
+        });
+    });
+    
+    pageNumSpan.textContent = `Page ${num} of ${pdfDoc.numPages}`;
+}
+
+// Go to previous page
+function onPrevPage() {
+    if (pageNum <= 1 || pageRendering) return;
+    pageNum--;
+    renderPage(pageNum);
+    nextPageBtn.disabled = false;
+    prevPageBtn.disabled = pageNum <= 1;
+}
+
+// Go to next page
+function onNextPage() {
+    if (pageNum >= pdfDoc.numPages || pageRendering) return;
+    pageNum++;
+    renderPage(pageNum);
+    prevPageBtn.disabled = false;
+    nextPageBtn.disabled = pageNum >= pdfDoc.numPages;
+}
+
+// Set up PDF zoom controls
+function setupPDFZoom() {
+    zoomInBtn.addEventListener('click', () => {
+        if (scale >= 3.0) return;
+        scale += 0.25;
+        if (pdfDoc) {
+            renderPage(pageNum);
+        }
+    });
+    
+    zoomOutBtn.addEventListener('click', () => {
+        if (scale <= 0.5) return;
+        scale -= 0.25;
+        if (pdfDoc) {
+            renderPage(pageNum);
+        }
+    });
+    
+    // Add page navigation event listeners
+    prevPageBtn.addEventListener('click', onPrevPage);
+    nextPageBtn.addEventListener('click', onNextPage);
 }
 
 // Set up countdown timer
@@ -297,9 +409,7 @@ function handleSubmit() {
         
         showSection('sectionSuccess');
         updateProgress(100);
-        prevBtn.style.display = 'none';
-        nextBtn.style.display = 'none';
-        submitBtn.style.display = 'none';
+        updateButtonVisibility();
         
         // Re-attach event listener for the results button
         document.getElementById('viewResultsBtn').addEventListener('click', () => {
@@ -359,51 +469,54 @@ function showSection(sectionId) {
 function updateButtonVisibility() {
     console.log(`Updating buttons for section ${currentSection}`);
     
-    // Always show prev button unless on first section
-    prevBtn.style.display = currentSection === 1 ? 'none' : 'block';
+    // Update all prev buttons
+    prevBtns.forEach(btn => {
+        btn.style.display = currentSection === 1 ? 'none' : 'block';
+        btn.disabled = currentSection === 1;
+    });
     
-    // Show next button except on last section
-    nextBtn.style.display = currentSection >= totalSections ? 'none' : 'block';
+    // Update all next buttons
+    nextBtns.forEach(btn => {
+        btn.style.display = currentSection >= totalSections ? 'none' : 'block';
+    });
     
     // Only show submit button on last section
     submitBtn.style.display = currentSection === totalSections ? 'block' : 'none';
-    
-    // Disable prev button on first section
-    prevBtn.disabled = currentSection === 1;
 }
 
 // Navigate to next section
 function nextSection() {
     if (currentSection >= totalSections) return;
     
-    console.log(`Moving to next section from ${currentSection}`);
-    
     // Validation for current section
-    if (currentSection === 1 && !personalInfoForm.checkValidity()) {
-        personalInfoForm.reportValidity();
-        return;
-    }
-    
-    // Load questions if moving to section 2 (Submit Answers)
     if (currentSection === 1) {
+        if (!personalInfoForm.checkValidity()) {
+            personalInfoForm.reportValidity();
+            return;
+        }
+        
         const medium = document.querySelector('input[name="medium"]:checked');
         if (!medium) {
             alert('Please select a medium first');
             return;
         }
         selectedMedium = medium.value;
-        loadQuestions();
     }
     
     currentSection++;
     showSection(`section${currentSection}`);
     updateProgress((currentSection / totalSections) * 100);
+    
+    // Load content for the new section
+    if (currentSection === 2) {
+        loadPaperPDF();
+    } else if (currentSection === 3) {
+        loadQuestions();
+    }
 }
 
 function prevSection() {
     if (currentSection <= 1) return;
-    
-    console.log(`Moving to previous section from ${currentSection}`);
     
     currentSection--;
     showSection(`section${currentSection}`);
@@ -433,11 +546,18 @@ function initializePage() {
     checkTheme();
     checkRegisteredUser();
     loadPaperDetails();
-    updateProgress(50); // Initial progress for first section
-    prevBtn.disabled = true;
+    setupPDFZoom();
+    updateProgress(33); // Initial progress for first section
+    updateButtonVisibility();
 
     // Initialize buttons
-    updateButtonVisibility();
+    prevBtns.forEach(btn => {
+        btn.addEventListener('click', prevSection);
+    });
+    
+    nextBtns.forEach(btn => {
+        btn.addEventListener('click', nextSection);
+    });
     
     // Get paperId first
     paperId = getPaperIdFromUrl();
@@ -451,8 +571,6 @@ function initializePage() {
 
 // Event listeners
 themeToggle.addEventListener('click', toggleTheme);
-prevBtn.addEventListener('click', prevSection);
-nextBtn.addEventListener('click', nextSection);
 submitBtn.addEventListener('click', handleSubmit);
 
 // Medium selection change
@@ -464,3 +582,18 @@ mediumRadios.forEach(radio => {
 
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', initializePage);
+
+// Block right-click and other download attempts
+document.addEventListener('contextmenu', function(e) {
+    e.preventDefault();
+});
+
+document.addEventListener('keydown', function(e) {
+    // Block F12, Ctrl+Shift+I, Ctrl+Shift+C, Ctrl+U
+    if (e.key === 'F12' || 
+        (e.ctrlKey && e.shiftKey && e.key === 'I') || 
+        (e.ctrlKey && e.shiftKey && e.key === 'C') || 
+        (e.ctrlKey && e.key === 'U')) {
+        e.preventDefault();
+    }
+});
