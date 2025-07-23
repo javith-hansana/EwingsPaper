@@ -1330,3 +1330,32 @@ body {
     background-color: #e7f1ff;
     border-left: 3px solid #0d6efd;
 }
+
+/* Ensure dropdown menus are visible and properly positioned */
+.dropdown-menu {
+    z-index: 1060;
+    position: absolute;
+    display: none;
+}
+
+.dropdown.show .dropdown-menu {
+    display: block;
+}
+
+/* Fix for question settings dropdown */
+.question-item .dropdown-menu {
+    right: 0;
+    left: auto;
+}
+
+/* Make sure dropdown isn't clipped by containers */
+.dropdown {
+    position: relative;
+}
+
+/* Fix for initial dropdown display */
+#addQuestionDropdown + .dropdown-menu {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
