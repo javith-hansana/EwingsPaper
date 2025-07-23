@@ -1022,6 +1022,24 @@
         </div>
     </div>
 
+    <!-- Student Answers Modal -->
+    <div class="modal fade" id="studentAnswersModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Your Paper Answers</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="studentAnswersModalBody">
+                <!-- Content will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+    </div>
+
 
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
@@ -4081,6 +4099,12 @@ async function loadPaperClassPapers() {
             // Filter by user's registered year
             if (paper.year !== user.registeredYear) continue;
             
+            // Get submission data for this paper
+            const submissionSnapshot = await database.ref(`paperClassSubmissions/${id}/${user.nic}`).once('value');
+            if (submissionSnapshot.exists()) {
+                paper.submissions = { [user.nic]: submissionSnapshot.val() };
+            }
+            
             const openTime = new Date(paper.openTime).getTime();
             const closeTime = new Date(paper.closeTime).getTime();
             
@@ -4133,6 +4157,9 @@ function createPaperClassPaperCard(id, paper, isActive) {
     const openTime = new Date(paper.openTime);
     const closeTime = new Date(paper.closeTime);
     
+    const user = JSON.parse(localStorage.getItem('currentUser'));
+    const hasSubmission = user && user.nic && paper.submissions && paper.submissions[user.nic];
+    
     let buttons = '';
     if (isActive) {
         buttons = `
@@ -4158,13 +4185,20 @@ function createPaperClassPaperCard(id, paper, isActive) {
                     <i class="bi bi-download me-1"></i> English
                 </button>
             </div>
-            <div class="btn-group w-100">
-                <button class="btn btn-outline-success download-paper-class-answers-btn" data-id="${id}">
+            <div class="btn-group w-100 mb-2">
+                <button class="btn btn-outline-success flex-grow-1 download-paper-class-answers-btn" data-id="${id}">
                     <i class="bi bi-file-earmark-text me-1"></i> Answers
                 </button>
-                <button class="btn btn-primary view-paper-class-ranks-btn" data-id="${id}">
+                <button class="btn btn-primary flex-grow-1 view-paper-class-ranks-btn" data-id="${id}">
                     <i class="bi bi-trophy me-1"></i> Rankings
                 </button>
+            </div>
+            <div class="btn-group w-100 mb-1">
+                ${hasSubmission ? `
+                <button class="btn btn-info view-paper-class-answers-btn" data-id="${id}">
+                    <i class="bi bi-eye me-1"></i> My Answers
+                </button>
+                ` : ''}
             </div>
         `;
     }
@@ -4221,6 +4255,14 @@ function addPaperClassCardEventListeners() {
                 const user = JSON.parse(localStorage.getItem('currentUser'));
                 await displayPaperClassRankings(paperId, user);
             }
+        });
+    });
+
+    // View answers button
+    document.querySelectorAll('.view-paper-class-answers-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const paperId = this.getAttribute('data-id');
+            showStudentPaperAnswers(paperId);
         });
     });
 }
@@ -4343,218 +4385,236 @@ async function checkAuthForPaperClassRankings() {
 async function loadPaperClassRankings() {
     try {
         const user = JSON.parse(localStorage.getItem('currentUser'));
-        if (!user) return;
+        if (!user || !user.studentId) {
+            showToast('Please login to view rankings', 'warning');
+            return;
+        }
 
         // Show loading states
-        document.getElementById('paperClassOverallTopStudent').innerHTML = '<div class="spinner-border"></div>';
-        document.getElementById('paperClassClassTopStudent').innerHTML = '<div class="spinner-border"></div>';
-        document.getElementById('paperClassOverallRankings').innerHTML = '<tr><td colspan="4" class="text-center"><div class="spinner-border"></div></td></tr>';
-        document.getElementById('paperClassClassRankings').innerHTML = '<tr><td colspan="4" class="text-center"><div class="spinner-border"></div></td></tr>';
-        document.getElementById('paperClassUserRankInfo').style.display = 'none';
+        showRankingsLoadingState();
 
-        // Get all published paper class rankings
-        const rankingsSnapshot = await database.ref('paperClassRankings').once('value');
+        // Get all paper class rankings and papers
+        const [rankingsSnapshot, papersSnapshot] = await Promise.all([
+            database.ref('paperClassRankings').once('value'),
+            database.ref('paperClassPapers').once('value')
+        ]);
+
         const allRankings = rankingsSnapshot.val() || {};
-
-        // Get paper titles
-        const papersSnapshot = await database.ref('paperClassPapers').once('value');
-        const papers = papersSnapshot.val() || {};
+        const allPapers = papersSnapshot.val() || {};
 
         // Populate paper filter dropdown
         const filter = document.getElementById('paperClassRankingsFilter');
         filter.innerHTML = '<option value="">All Papers</option>';
         
+        // Only show papers that have published rankings
         Object.entries(allRankings).forEach(([paperId, paperData]) => {
-            if (papers[paperId] && paperData.batches) {
+            if (paperData.batches && Object.values(paperData.batches).some(batch => batch.published)) {
+                const paperTitle = allPapers[paperId]?.title || `Paper ${paperId}`;
                 const option = document.createElement('option');
                 option.value = paperId;
-                option.textContent = papers[paperId].title;
+                option.textContent = paperTitle;
                 filter.appendChild(option);
             }
         });
 
-        // Load rankings for the selected paper (or all papers)
-        const selectedPaperId = filter.value;
-        await displayPaperClassRankings(selectedPaperId, user);
+        // Load initial rankings (all papers by default)
+        await displayPaperClassRankings('', user, allRankings, allPapers);
 
         // Add event listener for filter changes
         filter.addEventListener('change', async () => {
-            await displayPaperClassRankings(filter.value, user);
-        });
-
+    if (filter.value === "") {
+        // When "All Papers" is selected, show performance section
+        showSection('paperClassPerformance');
+        await loadPaperClassPerformance();
+    } else {
+        await displayPaperClassRankings(filter.value, user, allRankings, allPapers);
+    }
+});
     } catch (error) {
         console.error('Error loading paper class rankings:', error);
         showToast('Failed to load rankings', 'danger');
+        showRankingsErrorState();
     }
 }
 
-async function displayPaperClassRankings(paperId, user) {
-    try {
-        // Show loading states
-        document.getElementById('paperClassOverallTopStudent').innerHTML = '<div class="spinner-border"></div>';
-        document.getElementById('paperClassClassTopStudent').innerHTML = '<div class="spinner-border"></div>';
-        document.getElementById('paperClassOverallRankings').innerHTML = '<tr><td colspan="4" class="text-center"><div class="spinner-border"></div></td></tr>';
-        document.getElementById('paperClassClassRankings').innerHTML = '<tr><td colspan="4" class="text-center"><div class="spinner-border"></div></td></tr>';
-        document.getElementById('paperClassUserRankInfo').style.display = 'none';
+// Helper function to show loading state
+function showRankingsLoadingState() {
+    document.getElementById('paperClassOverallTopStudent').innerHTML = '<div class="spinner-border"></div>';
+    document.getElementById('paperClassClassTopStudent').innerHTML = '<div class="spinner-border"></div>';
+    document.getElementById('paperClassOverallRankings').innerHTML = '<tr><td colspan="4" class="text-center"><div class="spinner-border"></div></td></tr>';
+    document.getElementById('paperClassClassRankings').innerHTML = '<tr><td colspan="4" class="text-center"><div class="spinner-border"></div></td></tr>';
+    document.getElementById('paperClassUserRankInfo').style.display = 'none';
+}
 
-        // Get rankings data
-        const rankingsSnapshot = await database.ref('paperClassRankings').once('value');
-        const allRankings = rankingsSnapshot.val() || {};
-        
+// Helper function to show error state
+function showRankingsErrorState() {
+    const errorHTML = '<div class="text-center text-danger py-3"><i class="bi bi-exclamation-triangle"></i><p>Failed to load rankings</p></div>';
+    document.getElementById('paperClassOverallTopStudent').innerHTML = errorHTML;
+    document.getElementById('paperClassClassTopStudent').innerHTML = errorHTML;
+    document.getElementById('paperClassOverallRankings').innerHTML = '<tr><td colspan="4" class="text-center text-danger">Error loading data</td></tr>';
+    document.getElementById('paperClassClassRankings').innerHTML = '<tr><td colspan="4" class="text-center text-danger">Error loading data</td></tr>';
+}
+
+async function displayPaperClassRankings(paperId, user, allRankings, allPapers) {
+    try {
+        showRankingsLoadingState();
+
         // Get all user data for school information
         const usersSnapshot = await database.ref('users').once('value');
         const allUsers = usersSnapshot.val() || {};
-        
+
         // Create student-school mapping
         const studentSchoolMap = {};
-        Object.values(allUsers).forEach(user => {
-            if (user.studentId) {
-                studentSchoolMap[user.studentId] = user.school || 'Unknown School';
+        Object.entries(allUsers).forEach(([uid, userData]) => {
+            if (userData.studentId) {
+                studentSchoolMap[userData.studentId] = {
+                    school: userData.school || 'Unknown School',
+                    name: userData.name || 'Unknown Student',
+                    class: userData.class || 'Unknown Class'
+                };
             }
         });
 
+        // Process rankings data
         let allScores = [];
-        
-        if (paperId) {
-            // Get scores for selected paper only
-            if (allRankings[paperId] && allRankings[paperId].batches) {
-                Object.values(allRankings[paperId].batches).forEach(batch => {
+        const papersToProcess = paperId ? { [paperId]: allRankings[paperId] } : allRankings;
+
+        Object.entries(papersToProcess).forEach(([currentPaperId, paperData]) => {
+            if (paperData?.batches) {
+                Object.values(paperData.batches).forEach(batch => {
                     if (batch.published && batch.scores) {
-                        allScores = allScores.concat(Object.values(batch.scores));
+                        Object.values(batch.scores).forEach(score => {
+                            const studentInfo = studentSchoolMap[score.studentId] || {};
+                            allScores.push({
+                                ...score,
+                                name: studentInfo.name || score.name || 'Unknown Student',
+                                school: studentInfo.school || score.school || 'Unknown School',
+                                class: studentInfo.class || score.class || 'Unknown Class',
+                                paperId: currentPaperId,
+                                batchId: batch.batchId,
+                                paperTitle: allPapers[currentPaperId]?.title || `Paper ${currentPaperId}`
+                            });
+                        });
                     }
                 });
             }
-        } else {
-            // Get scores from all papers
-            Object.values(allRankings).forEach(paperData => {
-                if (paperData.batches) {
-                    Object.values(paperData.batches).forEach(batch => {
-                        if (batch.published && batch.scores) {
-                            allScores = allScores.concat(Object.values(batch.scores));
-                        }
-                    });
-                }
-            });
-        }
-
-        // Add school information from the mapping
-        allScores = allScores.map(score => ({
-            ...score,
-            name: score.name || 'Unknown Student',
-            school: studentSchoolMap[score.studentId] || score.school || 'Unknown School',
-            class: score.class || 'Unknown Class',
-            score: score.score || 0
-        }));
+        });
 
         if (allScores.length === 0) {
-            // Show empty state
-            document.getElementById('paperClassOverallTopStudent').innerHTML = `
-                <div class="text-center text-muted py-3">
-                    <i class="bi bi-info-circle fs-1"></i>
-                    <p class="mt-2">No ranking data available</p>
-                </div>
-            `;
-            document.getElementById('paperClassClassTopStudent').innerHTML = `
-                <div class="text-center text-muted py-3">
-                    <i class="bi bi-info-circle fs-1"></i>
-                    <p class="mt-2">No ranking data available</p>
-                </div>
-            `;
-            document.getElementById('paperClassOverallRankings').innerHTML = `
-                <tr><td colspan="4" class="text-center text-muted py-4">No rankings found</td></tr>
-            `;
-            document.getElementById('paperClassClassRankings').innerHTML = `
-                <tr><td colspan="4" class="text-center text-muted py-4">No rankings found</td></tr>
-            `;
+            showNoRankingsAvailable();
             return;
         }
 
-        // Sort all scores by score (descending)
-        allScores.sort((a, b) => b.score - a.score);
+        // Calculate ranks
+        calculateRanks(allScores);
 
-        // Assign overall ranks
-        let overallRank = 1;
-        allScores.forEach((score, index) => {
-            if (index > 0 && score.score < allScores[index - 1].score) {
-                overallRank = index + 1;
-            }
-            score.overallRank = overallRank;
-        });
-
-        // Group scores by class
-        const classGroups = {};
-        allScores.forEach(score => {
-            if (!classGroups[score.class]) {
-                classGroups[score.class] = [];
-            }
-            classGroups[score.class].push(score);
-        });
-
-        // Assign class ranks and sort within each class
-        Object.values(classGroups).forEach(classScores => {
-            classScores.sort((a, b) => b.score - a.score);
-            let classRank = 1;
-            classScores.forEach((score, index) => {
-                if (index > 0 && score.score < classScores[index - 1].score) {
-                    classRank = index + 1;
-                }
-                score.classRank = classRank;
-            });
-        });
-
-        // Calculate and display top schools
-        const { overallTopSchool, classTopSchool } = await calculateTopSchoolsRank(allScores, user.class);
-        displayTopSchoolsRank(overallTopSchool, classTopSchool, user.class);
-
-        // Display rankings tables - ensure we're using the sorted arrays
-        await displayRankingsTable(allScores.slice(0, 100), 'paperClassOverallRankings');
-        await displayRankingsTable((classGroups[user.class] || []).slice(0, 100), 'paperClassClassRankings');
-
-        // Show user rank if available
-        if (user.studentId) {
-            const userOverallScore = allScores.find(score => score.studentId === user.studentId);
-            const userClassScore = (classGroups[user.class] || []).find(score => score.studentId === user.studentId);
-            
-            const rankDetails = document.getElementById('paperClassUserRankDetails');
-            rankDetails.innerHTML = '';
-            
-            if (userOverallScore) {
-                rankDetails.innerHTML += `
-                    <div class="d-flex justify-content-between">
-                        <span>Overall Rank:</span>
-                        <strong>${userOverallScore.overallRank}</strong>
-                    </div>
-                    <div class="d-flex justify-content-between">
-                        <span>Score:</span>
-                        <strong>${userOverallScore.score}</strong>
-                    </div>
-                `;
-            }
-            
-            if (userClassScore) {
-                rankDetails.innerHTML += `
-                    <div class="d-flex justify-content-between">
-                        <span>Class Rank:</span>
-                        <strong>${userClassScore.classRank}</strong>
-                    </div>
-                    <div class="d-flex justify-content-between">
-                        <span>Score:</span>
-                        <strong>${userClassScore.score}</strong>
-                    </div>
-                `;
-            }
-            
-            if (userOverallScore || userClassScore) {
-                document.getElementById('paperClassUserRankInfo').style.display = 'block';
-            }
-        }
+        // Display results
+        displayRankingsResults(allScores, user);
+        
     } catch (error) {
         console.error('Error displaying rankings:', error);
-        showToast('Failed to load rankings', 'danger');
+        showToast('Failed to display rankings', 'danger');
+        showRankingsErrorState();
     }
 }
 
-async function displayRankingsTable(scores, tableId) {
+// Helper function to calculate ranks
+function calculateRanks(allScores) {
+    // Sort all scores by score (descending)
+    allScores.sort((a, b) => b.score - a.score);
+
+    // Assign overall ranks
+    let overallRank = 1;
+    allScores.forEach((score, index) => {
+        if (index > 0 && score.score < allScores[index - 1].score) {
+            overallRank = index + 1;
+        }
+        score.overallRank = overallRank;
+    });
+
+    // Group scores by class and assign class ranks
+    const classGroups = {};
+    allScores.forEach(score => {
+        if (!classGroups[score.class]) {
+            classGroups[score.class] = [];
+        }
+        classGroups[score.class].push(score);
+    });
+
+    Object.values(classGroups).forEach(classScores => {
+        classScores.sort((a, b) => b.score - a.score);
+        let classRank = 1;
+        classScores.forEach((score, index) => {
+            if (index > 0 && score.score < classScores[index - 1].score) {
+                classRank = index + 1;
+            }
+            score.classRank = classRank;
+        });
+    });
+}
+
+// Helper function to display rankings results
+function displayRankingsResults(allScores, user) {
+    // Get user's class from scores (in case it's different from profile)
+    const userClass = allScores.find(s => s.studentId === user.studentId)?.class || user.class;
+    
+    // Filter scores for user's class
+    const classScores = allScores.filter(score => score.class === userClass);
+
+    // Display top students
+    displayTopStudents(allScores, classScores, userClass);
+
+    // Display rankings tables
+    displayRankingsTable(allScores.slice(0, 100), 'paperClassOverallRankings');
+    displayRankingsTable(classScores.slice(0, 100), 'paperClassClassRankings');
+
+    // Show user's rank if available
+    showUserRankInfo(allScores, classScores, user);
+}
+
+// Helper function to display top students
+function displayTopStudents(allScores, classScores, userClass) {
+    const overallTop = allScores[0] || null;
+    const classTop = classScores[0] || null;
+
+    document.getElementById('paperClassOverallTopStudent').innerHTML = overallTop ? `
+        <div class="text-center">
+            <div class="school-badge bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-2" style="width: 60px; height: 60px;">
+                <i class="bi bi-trophy-fill fs-4"></i>
+            </div>
+            <h5 class="mb-1">${overallTop.name}</h5>
+            <p class="text-muted small mb-0">${overallTop.school}</p>
+            <p class="text-muted small">Score: ${overallTop.score}</p>
+        </div>
+    ` : '<div class="text-center text-muted">No top student data</div>';
+
+    document.getElementById('paperClassClassTopStudent').innerHTML = classTop ? `
+        <div class="text-center">
+            <div class="school-badge bg-success text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-2" style="width: 60px; height: 60px;">
+                <i class="bi bi-award-fill fs-4"></i>
+            </div>
+            <h5 class="mb-1">${classTop.name}</h5>
+            <p class="text-muted small mb-0">${classTop.school}</p>
+            <p class="text-muted small">Score: ${classTop.score}</p>
+        </div>
+    ` : `<div class="text-center text-muted">No top student in ${userClass}</div>`;
+}
+
+// Helper function to show no rankings available
+function showNoRankingsAvailable() {
+    const noDataHTML = `
+        <div class="text-center text-muted py-3">
+            <i class="bi bi-info-circle fs-1"></i>
+            <p class="mt-2">No ranking data available</p>
+        </div>
+    `;
+    document.getElementById('paperClassOverallTopStudent').innerHTML = noDataHTML;
+    document.getElementById('paperClassClassTopStudent').innerHTML = noDataHTML;
+    document.getElementById('paperClassOverallRankings').innerHTML = '<tr><td colspan="4" class="text-center text-muted py-4">No rankings found</td></tr>';
+    document.getElementById('paperClassClassRankings').innerHTML = '<tr><td colspan="4" class="text-center text-muted py-4">No rankings found</td></tr>';
+}
+
+function displayRankingsTable(scores, tableId) {
     const tableBody = document.getElementById(tableId);
     tableBody.innerHTML = '';
 
@@ -4563,32 +4623,55 @@ async function displayRankingsTable(scores, tableId) {
         return;
     }
 
-    // Fetch all student data in one batch
-    const studentIds = scores.map(score => score.studentId).filter(id => id);
-    const usersSnapshot = await database.ref('users').once('value');
-    const allUsers = usersSnapshot.val() || {};
-
-    // Create a map of studentId to school
-    const studentSchoolMap = {};
-    Object.values(allUsers).forEach(user => {
-        if (user.studentId) {
-            studentSchoolMap[user.studentId] = user.school || 'Unknown School';
-        }
-    });
-
-    // Populate the table
-    scores.forEach((score, index) => {
-        const tr = document.createElement('tr');
-        const school = studentSchoolMap[score.studentId] || score.school || 'Unknown School';
-        
-        tr.innerHTML = `
+    tableBody.innerHTML = scores.map((score, index) => `
+        <tr>
             <td>${index + 1}</td>
             <td>${score.name}</td>
             <td>${score.score}</td>
-            <td>${school}</td>
-        `;
-        tableBody.appendChild(tr);
-    });
+            <td>${score.school}</td>
+        </tr>
+    `).join('');
+}
+
+// Helper function to show user rank info
+function showUserRankInfo(allScores, classScores, user) {
+    const userOverallScore = allScores.find(score => score.studentId === user.studentId);
+    const userClassScore = classScores.find(score => score.studentId === user.studentId);
+    
+    const rankDetails = document.getElementById('paperClassUserRankDetails');
+    rankDetails.innerHTML = '';
+    
+    if (userOverallScore || userClassScore) {
+        document.getElementById('paperClassUserRankInfo').style.display = 'block';
+        
+        if (userOverallScore) {
+            rankDetails.innerHTML += `
+                <div class="d-flex justify-content-between">
+                    <span>Overall Rank:</span>
+                    <strong>${userOverallScore.overallRank}</strong>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <span>Score:</span>
+                    <strong>${userOverallScore.score}</strong>
+                </div>
+            `;
+        }
+        
+        if (userClassScore) {
+            rankDetails.innerHTML += `
+                <div class="d-flex justify-content-between">
+                    <span>Class Rank:</span>
+                    <strong>${userClassScore.classRank}</strong>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <span>Score:</span>
+                    <strong>${userClassScore.score}</strong>
+                </div>
+            `;
+        }
+    } else {
+        document.getElementById('paperClassUserRankInfo').style.display = 'none';
+    }
 }
 
 
@@ -4684,30 +4767,34 @@ async function loadPaperClassPerformance() {
     try {
         const user = JSON.parse(localStorage.getItem('currentUser'));
         if (!user || !user.studentId) {
-            showToast('Please login to view Paper Class performance', 'warning');
+            showToast('Please login to view performance', 'warning');
             return;
         }
 
-        // Show loading states
-        document.getElementById('paperClassPapersTaken').textContent = '...';
-        document.getElementById('paperClassAverageScore').textContent = '...';
-        document.getElementById('paperClassLastScore').textContent = '...';
-        document.getElementById('paperClassImprovement').textContent = '...';
-        document.getElementById('paperClassRecentPapers').innerHTML = `
-            <tr>
-                <td colspan="6" class="text-center py-4">
-                    <div class="spinner-border"></div>
-                </td>
-            </tr>
-        `;
+        // Show loading states...
 
-        // Get all paper class rankings
-        const rankingsSnapshot = await database.ref('paperClassRankings').once('value');
+        // Get all data in parallel for better performance
+        const [rankingsSnapshot, papersSnapshot, usersSnapshot] = await Promise.all([
+            database.ref('paperClassRankings').once('value'),
+            database.ref('paperClassPapers').once('value'),
+            database.ref('users').once('value')
+        ]);
+
         const allRankings = rankingsSnapshot.val() || {};
-
-        // Get all paper class papers for titles
-        const papersSnapshot = await database.ref('paperClassPapers').once('value');
         const allPapers = papersSnapshot.val() || {};
+        const allUsers = usersSnapshot.val() || {};
+
+        // Create student-school mapping
+        const studentSchoolMap = {};
+        Object.entries(allUsers).forEach(([uid, userData]) => {
+            if (userData.studentId) {
+                studentSchoolMap[userData.studentId] = {
+                    name: userData.name || 'Unknown Student',
+                    school: userData.school || 'Unknown School',
+                    class: userData.class || 'Unknown Class'
+                };
+            }
+        });
 
         // Process all rankings to find user's scores
         let userScores = [];
@@ -4717,16 +4804,50 @@ async function loadPaperClassPerformance() {
             if (paperData.batches) {
                 totalPossiblePapers++;
                 
-                // Check all batches for this paper
                 for (const [batchId, batch] of Object.entries(paperData.batches)) {
                     if (batch.published && batch.scores) {
-                        // Find user's score in this batch
                         const userScore = Object.values(batch.scores).find(
                             score => score.studentId === user.studentId
                         );
                         
                         if (userScore) {
                             const paperInfo = allPapers[paperId] || {};
+                            const studentInfo = studentSchoolMap[user.studentId] || {};
+                            
+                            // Calculate ranks for this paper batch
+                            const allBatchScores = Object.values(batch.scores).map(score => ({
+                                ...score,
+                                name: studentSchoolMap[score.studentId]?.name || score.name || 'Unknown',
+                                school: studentSchoolMap[score.studentId]?.school || score.school || 'Unknown',
+                                class: studentSchoolMap[score.studentId]?.class || score.class || 'Unknown'
+                            }));
+                            
+                            // Sort and rank
+                            allBatchScores.sort((a, b) => b.score - a.score);
+                            
+                            // Calculate overall rank
+                            let overallRank = 1;
+                            allBatchScores.forEach((score, index) => {
+                                if (index > 0 && score.score < allBatchScores[index - 1].score) {
+                                    overallRank = index + 1;
+                                }
+                                score.overallRank = overallRank;
+                            });
+                            
+                            // Calculate class rank
+                            const classScores = allBatchScores.filter(s => s.class === studentInfo.class);
+                            let classRank = 1;
+                            classScores.forEach((score, index) => {
+                                if (index > 0 && score.score < classScores[index - 1].score) {
+                                    classRank = index + 1;
+                                }
+                                score.classRank = classRank;
+                            });
+                            
+                            // Find user's specific ranks
+                            const userOverallRank = allBatchScores.find(s => s.studentId === user.studentId)?.overallRank || 'N/A';
+                            const userClassRank = classScores.find(s => s.studentId === user.studentId)?.classRank || 'N/A';
+                            
                             userScores.push({
                                 paperId,
                                 batchId,
@@ -4735,8 +4856,8 @@ async function loadPaperClassPerformance() {
                                 date: batch.publishDate || Date.now(),
                                 score: userScore.score || 0,
                                 totalMarks: userScore.totalMarks || 100,
-                                classRank: userScore.classRank || 'N/A',
-                                overallRank: userScore.overallRank || 'N/A',
+                                classRank: userClassRank,
+                                overallRank: userOverallRank,
                                 percentage: (userScore.score / (userScore.totalMarks || 100) * 100).toFixed(1)
                             });
                             break; // Only need one score per paper
@@ -4749,18 +4870,14 @@ async function loadPaperClassPerformance() {
         // Sort by date (newest first)
         userScores.sort((a, b) => b.date - a.date);
 
-        // Update summary cards
+        // Update UI
         updatePaperClassPerformanceCards(userScores, totalPossiblePapers);
-
-        // Initialize performance chart
         initializePaperClassPerformanceChart(userScores);
-
-        // Update recent papers table
-        updatePaperClassRecentPapersTable(userScores);
+        updatePaperClassRecentPapersTable(userScores, user);
 
     } catch (error) {
         console.error('Error loading Paper Class performance:', error);
-        showToast('Failed to load Paper Class performance data', 'danger');
+        showToast('Failed to load performance data', 'danger');
     }
 }
 
@@ -4786,21 +4903,21 @@ function updatePaperClassPerformanceCards(scores, totalPapers) {
 
         // Improvement (compare last two papers if available)
         if (scores.length >= 2) {
-            const currentScore = parseFloat(scores[0].percentage);
-            const previousScore = parseFloat(scores[1].percentage);
-            const improvement = ((currentScore - previousScore) / previousScore * 100).toFixed(1);
-            
-            improvementElement.textContent = `${Math.abs(improvement)}%`;
-            
-            if (improvement >= 0) {
-                improvementIcon.className = 'bi bi-arrow-up-right stat-icon text-success';
-            } else {
-                improvementIcon.className = 'bi bi-arrow-down-right stat-icon text-danger';
-            }
+        const currentScore = parseFloat(scores[0].percentage);
+        const previousScore = parseFloat(scores[1].percentage);
+        const improvement = currentScore - previousScore; // Absolute difference
+        
+        improvementElement.textContent = `${improvement >= 0 ? '+' : ''}${improvement.toFixed(1)}%`;
+        
+        if (improvement >= 0) {
+            improvementIcon.className = 'bi bi-arrow-up-right stat-icon text-success';
         } else {
-            improvementElement.textContent = 'N/A';
-            improvementIcon.className = 'bi bi-arrow-up-right stat-icon';
+            improvementIcon.className = 'bi bi-arrow-down-right stat-icon text-danger';
         }
+    } else {
+        improvementElement.textContent = 'N/A';
+        improvementIcon.className = 'bi bi-dash stat-icon';
+    }
     } else {
         papersTakenElement.textContent = '0';
         averageScoreElement.textContent = '0%';
@@ -4904,56 +5021,132 @@ function initializePaperClassPerformanceChart(scores) {
     });
 }
 
-function updatePaperClassRecentPapersTable(scores) {
+async function updatePaperClassRecentPapersTable(scores, user) {
     const tableBody = document.getElementById('paperClassRecentPapers');
     if (!tableBody) return;
     
-    if (scores.length === 0) {
+    // Show loading state
+    tableBody.innerHTML = `
+        <tr>
+            <td colspan="6" class="text-center py-4">
+                <div class="spinner-border"></div>
+                <p class="mt-2">Loading rankings...</p>
+            </td>
+        </tr>
+    `;
+
+    try {
+        // Get all users data for accurate ranking calculation
+        const usersSnapshot = await database.ref('users').once('value');
+        const allUsers = usersSnapshot.val() || {};
+
+        // Process each paper to get accurate rankings
+        const papersWithRanks = await Promise.all(scores.map(async (score) => {
+            // Get the specific paper's ranking data
+            const paperRankingsSnapshot = await database.ref(`paperClassRankings/${score.paperId}/batches`).once('value');
+            const batches = paperRankingsSnapshot.val();
+            
+            if (!batches) return { ...score, overallRank: 'N/A', classRank: 'N/A' };
+
+            // Find the batch where this user's score exists
+            let userBatch = null;
+            Object.values(batches).forEach(batch => {
+                if (batch.published && batch.scores) {
+                    Object.values(batch.scores).forEach(s => {
+                        if (s.studentId === user.studentId) {
+                            userBatch = batch;
+                        }
+                    });
+                }
+            });
+
+            if (!userBatch) return { ...score, overallRank: 'N/A', classRank: 'N/A' };
+
+            // Prepare all scores with proper student info
+            const allScores = Object.values(userBatch.scores).map(s => {
+                const studentInfo = allUsers[s.studentId] || {};
+                return {
+                    ...s,
+                    name: studentInfo.name || s.name,
+                    class: studentInfo.class || s.class,
+                    school: studentInfo.school || s.school
+                };
+            });
+
+            // Sort by score descending
+            allScores.sort((a, b) => b.score - a.score);
+
+            // Calculate overall ranks (handling ties)
+            let currentRank = 1;
+            allScores.forEach((score, index) => {
+                if (index > 0 && score.score < allScores[index-1].score) {
+                    currentRank = index + 1;
+                }
+                score.overallRank = currentRank;
+            });
+
+            // Calculate class ranks (filter by user's class)
+            const classScores = allScores.filter(s => s.class === user.class);
+            currentRank = 1;
+            classScores.forEach((score, index) => {
+                if (index > 0 && score.score < classScores[index-1].score) {
+                    currentRank = index + 1;
+                }
+                score.classRank = currentRank;
+            });
+
+            // Find this user's ranks
+            const userOverall = allScores.find(s => s.studentId === user.studentId);
+            const userClass = classScores.find(s => s.studentId === user.studentId);
+
+            return {
+                ...score,
+                overallRank: userOverall?.overallRank || 'N/A',
+                classRank: userClass?.classRank || 'N/A'
+            };
+        }));
+
+        // Display only the 5 most recent papers
+        const recentScores = papersWithRanks.slice(0, 5);
+        
+        tableBody.innerHTML = recentScores.map(score => {
+            const date = new Date(score.date);
+            return `
+                <tr>
+                    <td>${score.paperTitle} (Paper ${score.paperNumber})</td>
+                    <td>${date.toLocaleDateString()}</td>
+                    <td>${score.percentage}%</td>
+                    <td>${score.classRank}</td>
+                    <td>${score.overallRank}</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary view-paper-rankings-btn" 
+                                data-paperid="${score.paperId}">
+                            <i class="bi bi-trophy"></i> View Rankings
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+
+        // Add click handlers for view rankings buttons
+        document.querySelectorAll('.view-paper-rankings-btn').forEach(btn => {
+            btn.addEventListener('click', async function() {
+                const paperId = this.getAttribute('data-paperid');
+                await navigateToPaperRankings(paperId);
+            });
+        });
+
+    } catch (error) {
+        console.error('Error loading recent paper rankings:', error);
         tableBody.innerHTML = `
             <tr>
-                <td colspan="6" class="text-center py-4 text-muted">
-                    No paper class submissions found
+                <td colspan="6" class="text-center py-4 text-danger">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <p>Failed to load rankings</p>
                 </td>
             </tr>
         `;
-        return;
     }
-    
-    // Show only the 5 most recent papers
-    const recentScores = scores.slice(0, 5);
-    
-    tableBody.innerHTML = recentScores.map(score => {
-        const date = new Date(score.date);
-        return `
-            <tr>
-                <td>${score.paperTitle} (Paper ${score.paperNumber})</td>
-                <td>${date.toLocaleDateString()}</td>
-                <td>${score.percentage}%</td>
-                <td>${score.classRank}</td>
-                <td>${score.overallRank}</td>
-                <td>
-                    <button class="btn btn-sm btn-outline-primary view-paper-class-rank-btn" 
-                            data-paperid="${score.paperId}">
-                        <i class="bi bi-trophy"></i> View Ranks
-                    </button>
-                </td>
-            </tr>
-        `;
-    }).join('');
-    
-    // Add event listeners to view rank buttons
-    document.querySelectorAll('.view-paper-class-rank-btn').forEach(btn => {
-        btn.addEventListener('click', async function() {
-            const paperId = this.getAttribute('data-paperid');
-            showSection('paperClassRankings');
-            const filter = document.getElementById('paperClassRankingsFilter');
-            if (filter) {
-                filter.value = paperId;
-                const user = JSON.parse(localStorage.getItem('currentUser'));
-                await displayPaperClassRankings(paperId, user);
-            }
-        });
-    });
 }
 
 //====================================
@@ -5030,6 +5223,187 @@ document.addEventListener('DOMContentLoaded', function() {
 document.addEventListener('DOMContentLoaded', function() {
   initializePaperSubmission();
 });
+
+
+///paper class rankings navigation
+
+async function navigateToPaperRankings(paperId) {
+    try {
+        const user = JSON.parse(localStorage.getItem('currentUser'));
+        if (!user) {
+            showToast('Please login to view rankings', 'warning');
+            return;
+        }
+
+        // Show loading state
+        showRankingsLoadingState();
+
+        // Show the rankings section first
+        showSection('paperClassRankings');
+
+        // Set the paper filter
+        const filter = document.getElementById('paperClassRankingsFilter');
+        if (filter) {
+            filter.value = paperId;
+            
+            // Load the rankings data
+            const [rankingsSnapshot, papersSnapshot] = await Promise.all([
+                database.ref('paperClassRankings').once('value'),
+                database.ref('paperClassPapers').once('value')
+            ]);
+
+            await displayPaperClassRankings(paperId, user, rankingsSnapshot.val() || {}, papersSnapshot.val() || {});
+        }
+    } catch (error) {
+        console.error('Error navigating to paper rankings:', error);
+        showToast('Failed to load paper rankings', 'danger');
+    }
+}
+
+// view answers 
+
+async function showStudentPaperAnswers(paperId) {
+    try {
+        const user = JSON.parse(localStorage.getItem('currentUser'));
+        if (!user || !user.nic) {
+            showToast('Please login to view your answers', 'warning');
+            return;
+        }
+
+        // Show loading state
+        const modalBody = document.getElementById('studentAnswersModalBody');
+        modalBody.innerHTML = `
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary"></div>
+                <p class="mt-2">Loading your answers...</p>
+            </div>
+        `;
+
+        // Get paper and submission data
+        const [paperSnapshot, submissionSnapshot] = await Promise.all([
+            database.ref(`paperClassPapers/${paperId}`).once('value'),
+            database.ref(`paperClassSubmissions/${paperId}/${user.nic}`).once('value')
+        ]);
+
+        const paper = paperSnapshot.val();
+        const submission = submissionSnapshot.val();
+
+        if (!paper || !submission) {
+            throw new Error('Your submission data not found');
+        }
+
+        let html = `
+            <h4 class="mb-4">${paper.title}</h4>
+            <div class="alert alert-info mb-4">
+                <i class="bi bi-info-circle"></i> Here are your submitted answers for this paper.
+            </div>
+        `;
+
+        // Show MCQ answers if available
+        if (submission.mcqAnswers && Object.keys(submission.mcqAnswers).length > 0) {
+            html += `
+                <h5 class="mb-3">MCQ Answers</h5>
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Question</th>
+                                <th>Your Answer</th>
+                                <th>Correct Answer</th>
+                                <th>Result</th>
+                                <th>Marks</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            Object.entries(submission.mcqAnswers).forEach(([qNum, answer]) => {
+                const question = paper.questions[qNum];
+                if (!question || question.type !== 'mcq') return;
+
+                const isCorrect = answer === question.answer;
+                const marksEarned = isCorrect ? question.marks : 0;
+
+                html += `
+                    <tr class="${isCorrect ? 'table-success' : 'table-danger'}">
+                        <td>${qNum}</td>
+                        <td>${answer || 'Not answered'}</td>
+                        <td>${question.answer}</td>
+                        <td>${isCorrect ? 'Correct' : 'Incorrect'}</td>
+                        <td>${marksEarned}/${question.marks}</td>
+                    </tr>
+                `;
+            });
+
+            html += `
+                        </tbody>
+                    </table>
+                </div>
+                <div class="alert alert-primary mt-3">
+                    <strong>MCQ Score:</strong> ${submission.mcqScore || 0} / ${submission.totalMcqMarks || 0}
+                </div>
+            `;
+        }
+
+        // Show essay answers if available
+        if (submission.essayAnswers && Object.keys(submission.essayAnswers).length > 0) {
+            html += `
+                <h5 class="mt-5 mb-3">Essay Answers</h5>
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Question</th>
+                                <th>Your Answer</th>
+                                <th>Marked Answer Sheet</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            Object.entries(submission.essayAnswers).forEach(([qNum, essay]) => {
+                const markedAnswer = submission.markedEssayAnswers && submission.markedEssayAnswers[qNum];
+                
+                html += `
+                    <tr>
+                        <td>${qNum}</td>
+                        <td>
+                            <a href="${essay.url}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-download"></i> Download
+                            </a>
+                        </td>
+                        <td>
+                            ${markedAnswer ? `
+                                <a href="${markedAnswer.url}" target="_blank" class="btn btn-sm btn-outline-success">
+                                    <i class="bi bi-download"></i> Download Marked
+                                </a>
+                            ` : `
+                                <span class="text-muted">Not marked yet</span>
+                            `}
+                        </td>
+                    </tr>
+                `;
+            });
+
+            html += `
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        modalBody.innerHTML = html;
+        new bootstrap.Modal(document.getElementById('studentAnswersModal')).show();
+
+    } catch (error) {
+        console.error('Error loading student answers:', error);
+        modalBody.innerHTML = `
+            <div class="alert alert-danger">
+                <i class="bi bi-exclamation-triangle"></i> ${error.message}
+            </div>
+        `;
+    }
+}
     </script>
 </body>
 </html>
