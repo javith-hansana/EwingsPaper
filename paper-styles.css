@@ -454,3 +454,85 @@ body.dark-mode {
         justify-content: center;
     }
 }
+
+.is-valid {
+    border-color: #28a745;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3e%3cpath fill='%2328a745' d='M2.3 6.73L.6 4.53c-.4-1.04.46-1.4 1.1-.8l1.1 1.4 3.4-3.8c.6-.63 1.6-.27 1.2.7l-4 4.6c-.43.5-.8.4-1.1.1z'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right calc(0.375em + 0.1875rem) center;
+    background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+}
+
+.is-invalid {
+    border-color: #dc3545;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23dc3545'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath stroke-linejoin='round' d='M5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23dc3545' stroke='none'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right calc(0.375em + 0.1875rem) center;
+    background-size: calc(0.75em + 0.375rem) calc(0.75em + 0.375rem);
+}
+
+
+/* PDF Viewer Styles */
+.pdf-viewer-container {
+    position: relative;
+    overflow: auto;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    background-color: #f1f1f1;
+    margin-bottom: 20px;
+    padding: 15px;
+}
+
+.pdf-viewer {
+    margin: 0 auto;
+    display: block;
+    text-align: center;
+}
+
+#pdfCanvas {
+    border: 1px solid #ddd;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    max-width: 100%;
+}
+
+.pdf-controls {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.dark-mode .pdf-viewer-container {
+    background-color: #2a2a4a;
+    border-color: #3a3a5a;
+}
+
+.dark-mode #pdfCanvas {
+    border-color: #4a4a6a;
+}
+
+.zoom-controls {
+    gap: 5px;
+}
+
+/* Block screenshot attempts */
+body::after {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: transparent;
+    pointer-events: none;
+    z-index: 9999;
+}
+
+/* Disable text selection */
+body {
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+}
