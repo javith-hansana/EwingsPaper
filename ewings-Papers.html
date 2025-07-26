@@ -1,0 +1,3068 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>eWings Papers - Physics Paper Class Platform</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@9/swiper-bundle.min.css">
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <style>
+:root {
+    --primary-blue: #0056b3;
+    --dark-blue: #003366;
+    --accent-blue: #007bff;
+    --light-blue: #e6f0ff;
+    --black: #212529;
+    --white: #ffffff;
+    --gray: #6c757d;
+    --light-gray: #f8f9fa;
+}
+
+body {
+    font-family: 'Poppins', sans-serif;
+    color: var(--black);
+    overflow-x: hidden;
+    line-height: 1.6;
+}
+
+/* Navigation */
+.navbar {
+    padding: 15px 0;
+    transition: all 0.3s ease;
+}
+
+.navbar.scrolled {
+    background: var(--white) !important;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+    padding: 10px 0;
+}
+
+.navbar.scrolled .nav-link {
+    color: var(--black) !important;
+}
+
+.navbar.scrolled .navbar-brand img {
+    filter: brightness(0);
+}
+
+.navbar.scrolled .btn-ewings {
+    background: var(--primary-blue);
+}
+
+.nav-link {
+    font-weight: 500;
+    padding: 8px 15px !important;
+    transition: all 0.3s ease;
+}
+
+.nav-link:hover {
+    color: var(--accent-blue) !important;
+}
+
+/* Banner Slider */
+.banner-slider {
+    height: 100vh;
+    min-height: 500px;
+    max-height: 800px;
+    position: relative;
+    overflow: hidden;
+}
+
+.banner-slide {
+    width: 100%;
+    height: 100%;
+    background-size: cover;
+    background-position: center;
+    position: relative;
+    z-index: 1;
+}
+
+.banner-slide::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 51, 102, 0.7);
+    z-index: 2;
+}
+
+.banner-content {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 100%;
+    transform: translateY(-50%);
+    z-index: 3;
+    color: var(--white);
+    padding: 0 15px;
+}
+
+.banner-content h1 {
+    font-weight: 700;
+    text-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    margin-bottom: 20px;
+}
+
+.banner-content p {
+    font-size: 1.2rem;
+    margin-bottom: 30px;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.swiper-pagination-bullet {
+    background: var(--white);
+    opacity: 0.5;
+    width: 12px;
+    height: 12px;
+    margin: 0 8px !important;
+    transition: all 0.3s ease;
+}
+
+.swiper-pagination-bullet-active {
+    background: var(--accent-blue);
+    opacity: 1;
+    transform: scale(1.2);
+}
+
+/* Section Common Styles */
+section {
+    padding: 80px 0;
+    position: relative;
+}
+
+.section-title {
+    position: relative;
+    display: inline-block;
+    margin-bottom: 30px;
+    font-weight: 700;
+    font-size: 2.2rem;
+}
+
+.section-title::after {
+    content: '';
+    position: absolute;
+    bottom: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80px;
+    height: 4px;
+    background: var(--accent-blue);
+    border-radius: 2px;
+}
+
+.section-subtitle {
+    font-size: 1.1rem;
+    color: var(--gray);
+    margin-bottom: 50px;
+    max-width: 700px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* Features */
+.feature-card {
+    transition: all 0.4s ease;
+    border: none;
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0, 86, 179, 0.1);
+    height: 100%;
+    background: var(--white);
+    border-top: 4px solid var(--accent-blue);
+    margin-bottom: 20px;
+}
+
+.feature-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 15px 40px rgba(0, 86, 179, 0.2);
+}
+
+.feature-icon {
+    width: 80px;
+    height: 80px;
+    background: var(--light-blue);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px;
+    font-size: 30px;
+    color: var(--primary-blue);
+    transition: all 0.3s ease;
+}
+
+.feature-card:hover .feature-icon {
+    background: var(--primary-blue);
+    color: var(--white);
+    transform: rotateY(180deg);
+}
+
+.feature-card .card-body {
+    padding: 30px;
+    text-align: center;
+}
+
+.feature-card h4 {
+    margin-bottom: 15px;
+    font-weight: 600;
+}
+
+/* Top Students */
+.student-card {
+    background: var(--white);
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+    height: 100%;
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.student-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(0, 86, 179, 0.15);
+}
+
+.rank-badge {
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    color: var(--white);
+    font-weight: bold;
+    position: absolute;
+    top: -20px;
+    left: 20px;
+    z-index: 2;
+    font-size: 20px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+}
+
+.student-card:hover .rank-badge {
+    transform: scale(1.1);
+}
+
+.rank-1 {
+    background: linear-gradient(135deg, #ffd700, #ffc800);
+    color: var(--black);
+}
+
+.rank-2 {
+    background: linear-gradient(135deg, #c0c0c0, #a0a0a0);
+    color: var(--black);
+}
+
+.rank-3 {
+    background: linear-gradient(135deg, #cd7f32, #b56c28);
+    color: var(--black);
+}
+
+.student-card .card-body {
+    padding: 30px 20px;
+    text-align: center;
+}
+
+.student-card img {
+    border: 3px solid rgba(0, 86, 179, 0.1);
+    transition: all 0.3s ease;
+}
+
+.student-card:hover img {
+    border-color: var(--accent-blue);
+    transform: scale(1.05);
+}
+
+.student-card h4 {
+    margin: 15px 0 5px;
+}
+
+.student-card .school {
+    color: var(--gray);
+    font-size: 0.9rem;
+    margin-bottom: 15px;
+}
+
+/* Achievements */
+.achievement-card {
+    background: var(--white);
+    border-radius: 15px;
+    padding: 30px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+    height: 100%;
+    transition: all 0.3s ease;
+    text-align: center;
+    border: 1px solid rgba(0, 86, 179, 0.1);
+}
+
+.achievement-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(0, 86, 179, 0.15);
+    border-color: rgba(0, 86, 179, 0.2);
+}
+
+.counter-number {
+    font-size: 3.5rem;
+    font-weight: 700;
+    color: var(--primary-blue);
+    margin-bottom: 0.5rem;
+    line-height: 1;
+}
+
+.counter-text {
+    font-size: 1.1rem;
+    color: var(--gray);
+}
+
+/* How It Works */
+.how-it-works {
+    position: relative;
+    overflow: hidden;
+}
+
+.how-it-works::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: url('https://images.unsplash.com/photo-1522202176988-66273c2fd55f?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80') no-repeat center center/cover;
+    opacity: 0.05;
+    z-index: -1;
+}
+
+.step-card {
+    background: var(--white);
+    border-radius: 15px;
+    padding: 30px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+    border-left: 4px solid var(--accent-blue);
+    transition: all 0.3s ease;
+    margin-bottom: 20px;
+}
+
+.step-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(0, 86, 179, 0.15);
+}
+
+.step-number {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--accent-blue);
+    margin-bottom: 15px;
+    display: inline-block;
+    width: 50px;
+    height: 50px;
+    line-height: 50px;
+    text-align: center;
+    background: rgba(0, 123, 255, 0.1);
+    border-radius: 50%;
+}
+
+.step-card h4 {
+    margin-bottom: 15px;
+}
+
+/* Testimonials */
+.testimonial-card {
+    background: var(--white);
+    border-radius: 15px;
+    padding: 30px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+    height: 100%;
+    position: relative;
+    border-top: 4px solid var(--accent-blue);
+    margin-bottom: 20px;
+    transition: all 0.3s ease;
+}
+
+.testimonial-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 30px rgba(0, 86, 179, 0.15);
+}
+
+.testimonial-quote {
+    font-size: 24px;
+    color: var(--primary-blue);
+    opacity: 0.7;
+    margin-bottom: 20px;
+}
+
+.testimonial-text {
+    font-style: italic;
+    margin-bottom: 20px;
+}
+
+.testimonial-author {
+    display: flex;
+    align-items: center;
+}
+
+.testimonial-author img {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    margin-right: 15px;
+    object-fit: cover;
+}
+
+.testimonial-author h6 {
+    margin-bottom: 0;
+}
+
+.testimonial-author small {
+    color: var(--gray);
+    font-size: 0.8rem;
+}
+
+/* Register Section */
+.register-section {
+    position: relative;
+    overflow: hidden;
+}
+
+.register-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: url('https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80') no-repeat center center/cover;
+    opacity: 0.05;
+    z-index: 0;
+}
+
+.register-content {
+    position: relative;
+    z-index: 1;
+}
+
+/* Buttons */
+.btn-ewings {
+    background: var(--primary-blue);
+    color: var(--white);
+    border: none;
+    padding: 12px 30px;
+    border-radius: 50px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-size: 14px;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-ewings:hover {
+    background: var(--dark-blue);
+    color: var(--white);
+    transform: translateY(-3px);
+    box-shadow: 0 10px 20px rgba(0, 86, 179, 0.3);
+}
+
+.btn-ewings-outline {
+    border: 2px solid var(--primary-blue);
+    color: var(--primary-blue);
+    background: transparent;
+    padding: 12px 30px;
+    border-radius: 50px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-size: 14px;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-ewings-outline:hover {
+    background: var(--primary-blue);
+    color: var(--white);
+    transform: translateY(-3px);
+    box-shadow: 0 10px 20px rgba(0, 86, 179, 0.3);
+}
+
+/* Backgrounds */
+.bg-blue-gradient {
+    background: linear-gradient(135deg, var(--primary-blue), var(--dark-blue));
+    color: var(--white);
+}
+
+.bg-light-blue {
+    background: var(--light-blue);
+}
+
+/* Footer */
+footer {
+    position: relative;
+    width: 100%;
+    background-color: #003366;
+    color: #ffffff;
+    padding: 30px 0;
+    font-family: 'Poppins', sans-serif;
+    z-index: 100;
+    display: block !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    margin-top: auto;
+}
+
+footer::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?ixlib=rb-1.2.1&auto=format&fit=crop&w=1352&q=80') no-repeat center center/cover;
+    opacity: 0.05;
+    z-index: 0;
+}
+
+.footer-col {
+    margin-bottom: 30px;
+    position: relative;
+    z-index: 1;
+}
+
+.footer-logo {
+    margin-bottom: 25px;
+}
+
+.footer-logo img {
+    transition: all 0.3s ease;
+}
+
+.footer-logo img:hover {
+    transform: translateY(-3px);
+}
+
+.footer-links h5 {
+    margin-bottom: 20px;
+    font-size: 1.2rem;
+    font-weight: 600;
+    position: relative;
+    display: inline-block;
+    padding-bottom: 8px;
+}
+
+.footer-links h5::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 40px;
+    height: 2px;
+    background: var(--accent-blue);
+    border-radius: 2px;
+}
+
+.footer-links ul {
+    padding-left: 0;
+    list-style: none;
+}
+
+.footer-links ul li {
+    margin-bottom: 12px;
+    position: relative;
+    padding-left: 15px;
+}
+
+.footer-links ul li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 6px;
+    height: 6px;
+    background: var(--accent-blue);
+    border-radius: 50%;
+    opacity: 0;
+    transition: all 0.3s ease;
+}
+
+.footer-links ul li:hover::before {
+    opacity: 1;
+}
+
+.footer-links a {
+    color: rgba(255, 255, 255, 0.8);
+    text-decoration: none;
+    transition: all 0.3s ease;
+    font-size: 0.95rem;
+    display: inline-block;
+}
+
+.footer-links a:hover {
+    color: var(--white);
+    padding-left: 8px;
+    transform: translateX(5px);
+}
+
+/* Newsletter Form Styles */
+.newsletter-form {
+    margin-top: 20px;
+}
+
+.newsletter-form h5 {
+    color: var(--white);
+    margin-bottom: 20px;
+    font-weight: 600;
+    position: relative;
+    display: inline-block;
+    padding-bottom: 8px;
+}
+
+.newsletter-form h5::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 40px;
+    height: 2px;
+    background: var(--accent-blue);
+}
+
+.newsletter-form p {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.95rem;
+    margin-bottom: 25px;
+    line-height: 1.6;
+}
+
+.newsletter-input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.newsletter-input {
+    padding: 14px 20px;
+    border-radius: 8px;
+    border: none;
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--white);
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    width: 100%;
+}
+
+.newsletter-input::placeholder {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.newsletter-input:focus {
+    outline: none;
+    background: rgba(255, 255, 255, 0.15);
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+}
+
+.newsletter-submit {
+    background: var(--accent-blue);
+    color: var(--white);
+    border: none;
+    padding: 14px 25px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.95rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    width: 100%;
+}
+
+.newsletter-submit:hover {
+    background: var(--primary-blue);
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0, 86, 179, 0.4);
+}
+
+.social-icons {
+    display: flex;
+    gap: 15px;
+    margin-top: 20px;
+    justify-content: center;
+}
+
+.social-icons a {
+    color: var(--white);
+    font-size: 1.2rem;
+    transition: all 0.3s ease;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.social-icons a:hover {
+    transform: translateY(-3px);
+    background: var(--accent-blue);
+    box-shadow: 0 5px 15px rgba(0, 86, 179, 0.3);
+}
+
+.copyright {
+    border-top: 1px solid rgba(255, 255, 255, 0.15);
+    padding-top: 25px;
+    margin-top: 30px;
+    text-align: center;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.9rem;
+    position: relative;
+    z-index: 1;
+}
+
+.copyright a {
+    color: var(--accent-blue);
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+.copyright a:hover {
+    color: var(--white);
+    text-decoration: underline;
+}
+
+/* Footer Animations */
+.footer-col {
+    opacity: 1;
+    transform: translateY(0);
+    transition: all 0.5s ease;
+}
+
+.footer-col.animated {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Video Player Styles */
+.custom-video-player {
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0, 86, 179, 0.15);
+    background: var(--white);
+    transition: all 0.3s ease;
+}
+
+.custom-video-player:hover {
+    box-shadow: 0 15px 40px rgba(0, 86, 179, 0.25);
+}
+
+.video-container {
+    position: relative;
+    padding-bottom: 56.25%; /* 16:9 aspect ratio */
+    height: 0;
+    overflow: hidden;
+    background: #000;
+    cursor: pointer;
+}
+
+.video-container video {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    outline: none;
+}
+
+/* Video Controls */
+.video-controls {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.7), transparent);
+    padding: 10px 15px;
+    display: flex;
+    flex-direction: column;
+    transition: all 0.3s ease;
+    opacity: 1; /* Changed from 0 to 1 to always show controls */
+    z-index: 10;
+}
+
+.video-container:hover .video-controls,
+.video-controls.visible {
+    opacity: 1;
+}
+
+/* Progress Bar */
+.progress-container {
+    width: 100%;
+    height: 8px;
+    margin-bottom: 12px;
+    cursor: pointer;
+    position: relative;
+}
+
+.progress-bar {
+    position: relative;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    background: var(--accent-blue);
+    width: 0%;
+    transition: width 0.1s linear;
+}
+
+.progress-handle {
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 12px;
+    height: 12px;
+    background: var(--accent-blue);
+    border-radius: 50%;
+    opacity: 0;
+    transition: opacity 0.2s;
+    z-index: 2;
+}
+
+.progress-container:hover .progress-handle,
+.progress-container.dragging .progress-handle {
+    opacity: 1;
+}
+
+/* Chapter markers on progress bar */
+.chapter-markers {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+}
+
+.chapter-marker {
+    position: absolute;
+    top: 0;
+    width: 2px;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.5);
+    transform: translateX(-50%);
+    transition: all 0.2s;
+    z-index: 1;
+}
+
+.chapter-marker:hover {
+    background: var(--accent-blue);
+    width: 4px;
+}
+
+.chapter-tooltip {
+    position: absolute;
+    bottom: 100%;
+    left: 0;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    white-space: nowrap;
+    transform: translateX(-50%);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+    z-index: 10;
+}
+
+/* Controls Bar */
+.controls-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.left-controls, .right-controls {
+    display: flex;
+    align-items: center;
+}
+
+.control-btn {
+    background: transparent;
+    border: none;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+    padding: 5px 8px;
+    border-radius: 4px;
+    transition: all 0.2s;
+    position: relative;
+    min-width: 36px;
+    min-height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.control-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(1.1);
+}
+
+.control-btn:active {
+    transform: scale(0.95);
+}
+
+.time-display {
+    color: white;
+    font-size: 14px;
+    font-family: monospace;
+    margin: 0 10px;
+    min-width: 100px;
+    text-align: center;
+}
+
+/* Volume Controls */
+.volume-btn {
+    margin-right: 5px;
+}
+
+.volume-slider {
+    width: 80px;
+    margin-right: 15px;
+    opacity: 1; /* Changed from 0 to 1 to always show volume slider */
+    transition: opacity 0.3s;
+    display: flex;
+    align-items: center;
+}
+
+.volume-slider input {
+    width: 100%;
+    cursor: pointer;
+    -webkit-appearance: none;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 2px;
+    outline: none;
+}
+
+.volume-slider input::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 12px;
+    height: 12px;
+    background: var(--accent-blue);
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.controls-bar:hover .volume-slider,
+.volume-slider:hover,
+.volume-slider.active {
+    opacity: 1;
+}
+
+/* Speed Control */
+.speed-btn {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    padding: 2px 8px;
+    font-size: 13px;
+    margin-right: 10px;
+    min-width: 35px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.speed-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* Settings menu */
+.settings-menu {
+    position: absolute;
+    bottom: 50px;
+    right: 10px;
+    background: rgba(0, 0, 0, 0.8);
+    border-radius: 8px;
+    padding: 10px;
+    min-width: 150px;
+    display: none;
+    z-index: 20;
+}
+
+.settings-menu.show {
+    display: block;
+}
+
+.settings-menu-item {
+    color: white;
+    padding: 8px 12px;
+    cursor: pointer;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.settings-menu-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.settings-menu-item i {
+    margin-right: 8px;
+}
+
+/* Big Play Button */
+.big-play-btn {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 70px;
+    height: 70px;
+    background: rgba(0, 86, 179, 0.8);
+    border: none;
+    border-radius: 50%;
+    color: white;
+    font-size: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s;
+    opacity: 1;
+    z-index: 5;
+}
+
+.big-play-btn.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.big-play-btn:hover {
+    background: rgba(0, 86, 179, 1);
+    transform: translate(-50%, -50%) scale(1.1);
+}
+
+/* Fullscreen styles */
+:-webkit-full-screen .video-container {
+    width: 100%;
+    height: 100%;
+    padding-bottom: 0;
+}
+
+:-moz-full-screen .video-container {
+    width: 100%;
+    height: 100%;
+    padding-bottom: 0;
+}
+
+:-ms-fullscreen .video-container {
+    width: 100%;
+    height: 100%;
+    padding-bottom: 0;
+}
+
+:fullscreen .video-container {
+    width: 100%;
+    height: 100%;
+    padding-bottom: 0;
+}
+
+/* Fullscreen controls adjustment */
+:fullscreen .video-controls {
+    padding: 15px 20px;
+}
+
+:fullscreen .progress-container {
+    height: 10px;
+}
+
+:fullscreen .control-btn {
+    font-size: 18px;
+}
+
+:fullscreen .time-display {
+    font-size: 16px;
+}
+
+:fullscreen .big-play-btn {
+    width: 90px;
+    height: 90px;
+    font-size: 40px;
+}
+
+/* Chapters Navigation */
+.chapters-container {
+    background: var(--white);
+    border-top: 1px solid rgba(0, 86, 179, 0.1);
+}
+
+.chapters-header {
+    padding: 15px 20px;
+    background: var(--light-blue);
+    border-bottom: 1px solid rgba(0, 86, 179, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+}
+
+.chapters-header h5 {
+    margin: 0;
+    color: var(--primary-blue);
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+}
+
+.chapters-header i {
+    transition: transform 0.3s;
+}
+
+.chapters-header.collapsed i {
+    transform: rotate(-90deg);
+}
+
+.chapters-list {
+    display: flex;
+    flex-wrap: wrap;
+    padding: 10px;
+    max-height: 400px;
+    overflow-y: auto;
+    transition: max-height 0.3s ease;
+}
+
+.chapters-container.collapsed .chapters-list {
+    max-height: 0;
+    padding: 0;
+    overflow: hidden;
+}
+
+.chapter-item {
+    flex: 0 0 100%;
+    padding: 12px 15px;
+    border: none;
+    background: none;
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+}
+
+.chapter-item:hover {
+    background: rgba(0, 86, 179, 0.05);
+}
+
+.chapter-item.active {
+    background: rgba(0, 86, 179, 0.1);
+    font-weight: 500;
+}
+
+.chapter-time {
+    font-weight: 600;
+    color: var(--primary-blue);
+    min-width: 50px;
+    margin-right: 15px;
+    font-family: monospace;
+}
+
+.chapter-title {
+    color: var(--black);
+    flex: 1;
+}
+
+/* Mobile double-tap overlay */
+.double-tap-overlay {
+    position: absolute;
+    width: 50%;
+    height: 100%;
+    top: 0;
+    z-index: 15;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 24px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+}
+
+.double-tap-overlay.left {
+    left: 0;
+    background: linear-gradient(to right, rgba(0, 0, 0, 0.4), transparent);
+}
+
+.double-tap-overlay.right {
+    right: 0;
+    background: linear-gradient(to left, rgba(0, 0, 0, 0.4), transparent);
+}
+
+.double-tap-overlay.show {
+    opacity: 1;
+}
+
+/* Mobile specific styles */
+.mobile-controls {
+    display: none;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 1199px) {
+    .banner-content h1 {
+        font-size: 2.8rem;
+    }
+    
+    .section-title {
+        font-size: 2rem;
+    }
+}
+
+@media (max-width: 991px) {
+    .banner-slider {
+        height: 70vh;
+        min-height: 400px;
+    }
+    
+    .navbar-collapse {
+        background: var(--white);
+        padding: 20px;
+        margin-top: 10px;
+        border-radius: 10px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+    
+    .navbar-dark .navbar-collapse .nav-link {
+        color: var(--black) !important;
+        padding: 10px 0;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    }
+    
+    .navbar-dark .navbar-collapse .nav-link:last-child {
+        border-bottom: none;
+    }
+    
+    .banner-content h1 {
+        font-size: 2.2rem;
+    }
+    
+    .section-title {
+        font-size: 1.8rem;
+    }
+    
+    .section-title::after {
+        bottom: -8px;
+        height: 3px;
+    }
+    
+    .footer-col {
+        margin-bottom: 40px;
+    }
+
+    .social-icons {
+        justify-content: flex-start;
+    }
+}
+
+@media (max-width: 767px) {
+    section {
+        padding: 60px 0;
+    }
+    
+    .banner-slider {
+        height: 60vh;
+        min-height: 350px;
+    }
+    
+    .banner-content h1 {
+        font-size: 1.8rem;
+        margin-bottom: 15px !important;
+    }
+    
+    .banner-content p {
+        font-size: 1rem !important;
+        margin-bottom: 20px !important;
+    }
+    
+    .banner-buttons {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .banner-buttons .btn {
+        width: 100%;
+    }
+    
+    .counter-number {
+        font-size: 2.5rem;
+    }
+    
+    .footer-links ul {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 10px 25px;
+    }
+    
+    .footer-links ul li {
+        margin-bottom: 0;
+        padding-left: 0;
+    }
+    
+    footer {
+        text-align: center;
+    }
+    
+    .social-icons {
+        justify-content: center;
+    }
+    
+    .newsletter-form {
+        max-width: 400px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    
+    /* Mobile video player adjustments - UPDATED */
+    .video-controls {
+        padding: 8px !important;
+        opacity: 1 !important;
+        transition: opacity 0.3s ease;
+        background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+    }
+    
+    .controls-bar {
+        flex-wrap: nowrap;
+        gap: 5px;
+        justify-content: space-between;
+    }
+    
+    .left-controls, .right-controls {
+        width: auto;
+        justify-content: flex-start;
+        margin-bottom: 0;
+    }
+    
+    .progress-container {
+        order: -1;
+        margin-bottom: 8px;
+        height: 6px;
+    }
+    
+    .control-btn {
+        font-size: 16px !important;
+        padding: 5px !important;
+        min-width: 36px;
+        min-height: 36px;
+    }
+    
+    .time-display {
+        font-size: 12px !important;
+        min-width: 60px !important;
+        margin: 0 5px;
+    }
+    
+    .volume-slider {
+        width: 60px !important;
+        opacity: 1 !important;
+        margin-right: 0 !important;
+    }
+    
+    .speed-btn {
+        display: block !important;
+    }
+    
+    .settings-btn {
+        display: block !important;
+    }
+    
+    /* Fullscreen mobile adjustments */
+    :fullscreen .video-controls {
+        padding: 10px !important;
+    }
+    
+    :fullscreen .control-btn {
+        font-size: 18px !important;
+    }
+    
+    :fullscreen .time-display {
+        font-size: 14px !important;
+    }
+    
+    /* Ensure controls are visible in fullscreen */
+    .video-container:fullscreen .video-controls {
+        opacity: 1 !important;
+    }
+    
+    /* Big play button adjustments */
+    .big-play-btn {
+        width: 50px;
+        height: 50px;
+        font-size: 24px;
+    }
+    
+    :fullscreen .big-play-btn {
+        width: 70px;
+        height: 70px;
+        font-size: 30px;
+    }
+}
+
+@media (max-width: 575px) {
+    section {
+        padding: 50px 0;
+    }
+    
+    .banner-slider {
+        height: 80vh;
+        min-height: 300px;
+    }
+    
+    .banner-content h1 {
+        font-size: 1.6rem;
+    }
+    
+    .banner-content p {
+        font-size: 0.9rem;
+    }
+    
+    .section-title {
+        font-size: 1.5rem;
+    }
+    
+    .feature-icon {
+        width: 60px;
+        height: 60px;
+        font-size: 24px;
+    }
+    
+    .btn-ewings,
+    .btn-ewings-outline {
+        padding: 10px 20px;
+        font-size: 13px;
+    }
+    
+    .student-card .rank-badge {
+        width: 40px;
+        height: 40px;
+        font-size: 16px;
+        top: -15px;
+    }
+    
+    .footer-links ul {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .social-icons {
+        gap: 10px;
+    }
+    
+    .social-icons a {
+        width: 36px;
+        height: 36px;
+        font-size: 1rem;
+    }
+    
+    /* Simplify controls for very small screens */
+    .left-controls {
+        flex: 1;
+        justify-content: flex-start;
+    }
+    
+    .right-controls {
+        flex: 0;
+    }
+    
+    .time-display {
+        min-width: 50px !important;
+        font-size: 11px !important;
+    }
+    
+    .volume-slider {
+        width: 40px !important;
+    }
+}
+
+@media (max-width: 400px) {
+    .navbar-brand img {
+        max-width: 150px;
+    }
+    
+    .banner-content {
+        padding: 0 20px;
+    }
+    
+    .section-title {
+        font-size: 1.4rem;
+    }
+}
+
+@media (min-width: 768px) {
+    .newsletter-input-group {
+        flex-direction: row;
+    }
+    
+    .newsletter-input {
+        flex: 1;
+        min-width: 200px;
+    }
+    
+    .newsletter-submit {
+        width: auto;
+    }
+}
+
+/* Orientation-specific styles */
+@media (orientation: landscape) {
+    .video-container {
+        max-height: 100vh;
+        height: 100vh !important;
+        padding-bottom: 0 !important;
+    }
+    
+    .video-controls {
+        padding: 15px !important;
+        opacity: 1 !important;
+    }
+    
+    .controls-bar {
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+    }
+    
+    .left-controls,
+    .right-controls {
+        width: auto !important;
+    }
+    
+    .progress-container {
+        order: 0 !important;
+    }
+    
+    /* Ensure controls are visible in fullscreen landscape */
+    :fullscreen .video-controls,
+    :-webkit-full-screen .video-controls,
+    :-moz-full-screen .video-controls {
+        opacity: 1 !important;
+        display: flex !important;
+    }
+}
+/* Ensure video fills container in fullscreen */
+:fullscreen video,
+:-webkit-full-screen video,
+:-moz-full-screen video {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
+}
+
+/* Fix for iOS fullscreen */
+video::-webkit-media-controls {
+    display: none !important;
+}
+
+/* Ensure our custom controls are on top in fullscreen */
+:fullscreen .video-controls,
+:-webkit-full-screen .video-controls,
+:-moz-full-screen .video-controls {
+    z-index: 2147483647 !important; /* Maximum z-index */
+}
+</style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark fixed-top">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <img src="EW-white.png" alt="eWings Papers" height="40">
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="#features">Features</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#top-students">Top Students</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#how-it-works">How It Works</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#contact">Contact</a>
+                    </li>
+                    <li class="nav-item ms-lg-3 mt-2 mt-lg-0">
+                        <a href="student-dashboard.html" class="btn btn-ewings">Student Login</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Banner Slider -->
+    <div class="banner-slider swiper">
+        <div class="swiper-wrapper">
+            <div class="swiper-slide banner-slide" style="background-image: url('slider2.jpg');">
+                <div class="container banner-content">
+                    <div class="row">
+                        <div class="col-lg-8 mx-auto text-center">
+                            <h1 class="display-4 fw-bold mb-4" data-aos="fade-up">Online Education with eWings Papers</h1>
+                            <p class="lead mb-4" data-aos="fade-up" data-aos-delay="100">The ultimate platform for A/L Physics students to practice, compete, and achieve top results.</p>
+                            <div class="d-flex flex-wrap gap-3 justify-content-center" data-aos="fade-up" data-aos-delay="200">
+                                <a href="#register" class="btn btn-ewings">Register Now</a>
+                                <a href="https://ewings.lk" target="_blank" class="btn btn-ewings-outline">Visit Main LMS</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="swiper-slide banner-slide" style="background-image: url('slider1.jpg');">
+                <div class="container banner-content">
+                    <div class="row">
+                        <div class="col-lg-8 mx-auto text-center">
+                            <h1 class="display-4 fw-bold mb-4">Comprehensive Physics Papers</h1>
+                            <p class="lead mb-4">Access hundreds of carefully curated physics papers designed to help you master the subject.</p>
+                            <div class="d-flex flex-wrap gap-3 justify-content-center">
+                                <a href="#features" class="btn btn-ewings">Explore Features</a>
+                                <a href="#how-it-works" class="btn btn-ewings-outline">How It Works</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="swiper-slide banner-slide" style="background-image: url('slider3.jpg');">
+                <div class="container banner-content">
+                    <div class="row">
+                        <div class="col-lg-8 mx-auto text-center">
+                            <h1 class="display-4 fw-bold mb-4">Track Your Progress</h1>
+                            <p class="lead mb-4">Monitor your performance with detailed analytics and compete with top students island-wide.</p>
+                            <div class="d-flex flex-wrap gap-3 justify-content-center">
+                                <a href="#top-students" class="btn btn-ewings">View Rankings</a>
+                                <a href="#register" class="btn btn-ewings-outline">Join Now</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="swiper-pagination"></div>
+    </div>
+
+    <!-- Features Section -->
+    <section id="features" class="py-5 py-lg-7">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-lg-8 text-center" data-aos="fade-up">
+                    <h2 class="section-title">eWings Papers</h2>
+                    <p class="lead mb-5">Our platform is designed to help you achieve your best results in Physics through comprehensive practice and performance tracking.</p>
+                </div>
+            </div>
+            
+            <div class="row g-4">
+                <div class="col-md-4" data-aos="fade-up" data-aos-delay="100">
+                    <div class="feature-card">
+                        <div class="card-body text-center p-4">
+                            <div class="feature-icon mb-4">
+                                <i class="bi bi-file-earmark-text"></i>
+                            </div>
+                            <h4 class="mb-3">Comprehensive Papers</h4>
+                            <p class="mb-0">Access a vast collection of carefully curated physics papers covering all topics in the A/L syllabus.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4" data-aos="fade-up" data-aos-delay="200">
+                    <div class="feature-card">
+                        <div class="card-body text-center p-4">
+                            <div class="feature-icon mb-4">
+                                <i class="bi bi-graph-up"></i>
+                            </div>
+                            <h4 class="mb-3">Performance Tracking</h4>
+                            <p class="mb-0">Monitor your progress with detailed analytics and personalized performance reports.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4" data-aos="fade-up" data-aos-delay="300">
+                    <div class="feature-card">
+                        <div class="card-body text-center p-4">
+                            <div class="feature-icon mb-4">
+                                <i class="bi bi-trophy"></i>
+                            </div>
+                            <h4 class="mb-3">Competitive Rankings</h4>
+                            <p class="mb-0">See how you compare with other students in your class and island-wide rankings.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Top Students Section -->
+<section id="top-students" class="py-5 py-lg-7 bg-light-blue">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8 text-center" data-aos="fade-up">
+                <h2 class="section-title">Top Performers by Year</h2>
+                <p class="lead mb-5">Celebrating the outstanding achievements of our students</p>
+            </div>
+        </div>
+        
+        <!-- Year Tabs Navigation -->
+        <div class="row justify-content-center mb-4">
+            <div class="col-lg-8">
+                <ul class="nav nav-tabs justify-content-center" id="yearTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="2025-tab" data-bs-toggle="tab" data-bs-target="#year2025" type="button" role="tab">2025</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="2026-tab" data-bs-toggle="tab" data-bs-target="#year2026" type="button" role="tab">2026</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="2027-tab" data-bs-toggle="tab" data-bs-target="#year2027" type="button" role="tab">2027</button>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        
+        <!-- Tab Content -->
+        <div class="tab-content" id="yearTabsContent">
+            <!-- 2025 Tab -->
+            <div class="tab-pane fade" id="year2025" role="tabpanel" aria-labelledby="2025-tab">
+                <div class="row g-4" id="top-students-2025">
+                    <div class="col-12 text-center">
+                        <div class="spinner-border text-primary"></div>
+                        <p>Loading 2025 rankings...</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 2026 Tab (now active by default) -->
+            <div class="tab-pane fade show active" id="year2026" role="tabpanel" aria-labelledby="2026-tab">
+                <div class="row g-4" id="top-students-2026">
+                    <div class="col-12 text-center">
+                        <div class="spinner-border text-primary"></div>
+                        <p>Loading 2026 rankings...</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 2027 Tab -->
+            <div class="tab-pane fade" id="year2027" role="tabpanel" aria-labelledby="2027-tab">
+                <div class="row g-4" id="top-students-2027">
+                    <div class="col-12 text-center">
+                        <div class="spinner-border text-primary"></div>
+                        <p>Loading 2027 rankings...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row mt-4">
+            <div class="col-12 text-center">
+                <a href="student-dashboard.html#paperClassRankings" class="btn btn-ewings-outline">
+                    <i class="bi bi-trophy me-1"></i> View All Rankings
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+    <!-- How It Works Section -->
+    <section id="how-it-works" class="py-5 py-lg-7 how-it-works">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-lg-8 text-center" data-aos="fade-up">
+                    <h2 class="section-title">How It Works</h2>
+                    <p class="lead mb-5">Get started with eWings Papers in just a few simple steps</p>
+                </div>
+            </div>
+            
+            <div class="row g-4">
+                <div class="col-md-6 col-lg-4" data-aos="fade-up" data-aos-delay="100">
+                    <div class="step-card">
+                        <div class="step-number">01</div>
+                        <h4>Register for the Class</h4>
+                        <p>Sign up through our main LMS at ewings.lk to get access to the paper class platform.</p>
+                    </div>
+                </div>
+                
+                <div class="col-md-6 col-lg-4" data-aos="fade-up" data-aos-delay="200">
+                    <div class="step-card">
+                        <div class="step-number">02</div>
+                        <h4>Access Papers</h4>
+                        <p>Log in to your student dashboard to download and attempt the assigned papers.</p>
+                    </div>
+                </div>
+                
+                <div class="col-md-6 col-lg-4" data-aos="fade-up" data-aos-delay="300">
+                    <div class="step-card">
+                        <div class="step-number">03</div>
+                        <h4>Submit Answers</h4>
+                        <p>Complete the papers and submit your answers through the platform before deadlines.</p>
+                    </div>
+                </div>
+                
+                <div class="col-md-6 col-lg-4" data-aos="fade-up" data-aos-delay="100">
+                    <div class="step-card">
+                        <div class="step-number">04</div>
+                        <h4>View Results</h4>
+                        <p>Check your scores, rankings, and detailed feedback on your performance.</p>
+                    </div>
+                </div>
+                
+                <div class="col-md-6 col-lg-4" data-aos="fade-up" data-aos-delay="200">
+                    <div class="step-card">
+                        <div class="step-number">05</div>
+                        <h4>Analyze Performance</h4>
+                        <p>Use our analytics tools to identify your strengths and areas for improvement.</p>
+                    </div>
+                </div>
+                
+                <div class="col-md-6 col-lg-4" data-aos="fade-up" data-aos-delay="300">
+                    <div class="step-card">
+                        <div class="step-number">06</div>
+                        <h4>Improve Continuously</h4>
+                        <p>Track your progress over time and see your scores improve with regular practice.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Video Tutorial Section -->
+    <section class="py-5 py-lg-7 bg-light-blue">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-lg-8 text-center" data-aos="fade-up">
+                    <h2 class="section-title">Video Tutorial</h2>
+                    <p class="lead mb-5">Learn how to make the most of eWings Papers platform</p>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-lg-10 mx-auto" data-aos="fade-up">
+                    <div class="custom-video-player">
+                        <!-- Video Container -->
+                        <div class="video-container">
+                            <video id="ewings-video" poster="slide4.jpg">
+                                <source src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" type="video/mp4">
+                                Your browser does not support the video tag.
+                            </video>
+                            
+                            <!-- Custom Controls -->
+                            <div class="video-controls">
+                                <div class="progress-container">
+                                    <div class="progress-bar">
+                                        <div class="progress-fill"></div>
+                                        <div class="progress-handle"></div>
+                                        <div class="chapter-markers"></div>
+                                        <div class="chapter-tooltip"></div>
+                                    </div>
+                                </div>
+                                
+                                <div class="controls-bar">
+                                    <div class="left-controls">
+                                        <button class="control-btn play-pause" title="Play/Pause">
+                                            <i class="bi bi-play-fill"></i>
+                                        </button>
+                                        
+                                        <div class="time-display">
+                                            <span class="current-time">0:00</span> / <span class="duration">0:00</span>
+                                        </div>
+                                        
+                                        <button class="control-btn volume-btn" title="Mute/Unmute">
+                                            <i class="bi bi-volume-up"></i>
+                                        </button>
+                                        <div class="volume-slider">
+                                            <input type="range" min="0" max="1" step="0.05" value="1">
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="right-controls">
+                                        <button class="control-btn speed-btn" title="Playback Speed">1x</button>
+                                        <button class="control-btn fullscreen-btn" title="Fullscreen">
+                                            <i class="bi bi-fullscreen"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="big-play-btn">
+                                <i class="bi bi-play-fill"></i>
+                            </button>
+                        </div>
+                        
+                        <!-- Chapters Navigation -->
+                        <div class="chapters-container">
+                            <div class="chapters-header">
+                                <h5><i class="bi bi-list-ol me-2"></i> Chapters</h5>
+                            </div>
+                            <div class="chapters-list">
+                                <button class="chapter-item" data-start="0" data-title="Introduction">
+                                    <span class="chapter-time">0:00</span>
+                                    <span class="chapter-title">Introduction</span>
+                                </button>
+                                <button class="chapter-item" data-start="120" data-title="Paper Access">
+                                    <span class="chapter-time">2:00</span>
+                                    <span class="chapter-title">Registration & Login</span>
+                                </button>
+                                <button class="chapter-item" data-start="240" data-title="Answer Submission">
+                                    <span class="chapter-time">4:00</span>
+                                    <span class="chapter-title">Access Papers</span>
+                                </button>
+                                <button class="chapter-item" data-start="360" data-title="Results & Analytics">
+                                    <span class="chapter-time">6:00</span>
+                                    <span class="chapter-title">Answer submissions</span>
+                                </button>
+                                <button class="chapter-item" data-start="480" data-title="Tips for Success">
+                                    <span class="chapter-time">8:00</span>
+                                    <span class="chapter-title">Track my progress</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials Section -->
+    <section id="testimonials" class="py-5 py-lg-7">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-lg-8 text-center" data-aos="fade-up">
+                    <h2 class="section-title">Success Stories</h2>
+                    <p class="lead mb-5">What our students say</p>
+                </div>
+            </div>
+            
+            <div class="row g-4">
+                <div class="col-md-4" data-aos="fade-up" data-aos-delay="100">
+                    <div class="testimonial-card">
+                        <div class="testimonial-quote">
+                            <i class="bi bi-quote"></i>
+                        </div>
+                        <p class="mb-4">"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat."</p>
+                        <div class="d-flex align-items-center">
+                            <img src="profile.png" alt="Student" class="rounded-circle me-3" width="50" height="50">
+                            <div>
+                                <h6 class="mb-0">Name</h6>
+                                <small class="text-muted">Island 1st - 2022</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4" data-aos="fade-up" data-aos-delay="200">
+                    <div class="testimonial-card">
+                        <div class="testimonial-quote">
+                            <i class="bi bi-quote"></i>
+                        </div>
+                        <p class="mb-4">"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat."</p>
+                        <div class="d-flex align-items-center">
+                            <img src="profile.png" alt="Student" class="rounded-circle me-3" width="50" height="50">
+                            <div>
+                                <h6 class="mb-0">Name</h6>
+                                <small class="text-muted">District 1st - 2021</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4" data-aos="fade-up" data-aos-delay="300">
+                    <div class="testimonial-card">
+                        <div class="testimonial-quote">
+                            <i class="bi bi-quote"></i>
+                        </div>
+                        <p class="mb-4">"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat."</p>
+                        <div class="d-flex align-items-center">
+                            <img src="profile.png" alt="Student" class="rounded-circle me-3" width="50" height="50">
+                            <div>
+                                <h6 class="mb-0">Name</h6>
+                                <small class="text-muted">Top 10 Island - 2023</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Register Section -->
+    <section id="register" class="py-5 py-lg-7 bg-blue-gradient">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-6 mb-5 mb-lg-0" data-aos="fade-right">
+                    <h2 class="text-white mb-4">Ready to Unlock Physics Mastery?</h2>
+                    <p class="text-white-50 mb-4">Join eWings Papers today and get access to our comprehensive platform that has helped thousands of students achieve their best results.</p>
+                    <div class="d-flex flex-wrap gap-3">
+                        <a href="https://ewings.lk/auth/register" target="_blank" class="btn btn-ewings">Register Now</a>
+                        <a href="student-dashboard.html" class="btn btn-ewings-outline">Student Login</a>
+                    </div>
+                </div>
+                <div class="col-lg-6" data-aos="fade-left">
+                    <img src="slide4.jpg" width="100%" class="img-fluid rounded" alt="Register Image">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section id="contact" class="py-5 py-lg-7">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-lg-8 text-center" data-aos="fade-up">
+                    <h2 class="section-title">Contact Us</h2>
+                    <p class="lead mb-5">Have questions? Get in touch with our team</p>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-4 mb-4 mb-md-0" data-aos="fade-up" data-aos-delay="100">
+                    <div class="text-center">
+                        <div class="feature-icon mb-3 mx-auto">
+                            <i class="bi bi-geo-alt"></i>
+                        </div>
+                        <h4 class="mb-3">Our Centers</h4>
+                        <p class="mb-0">
+                            Nugegoda<br>
+                            Kandy<br>
+                            Kegalle<br>
+                            Kurunegala<br>
+                            Galle
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="col-md-4 mb-4 mb-md-0" data-aos="fade-up" data-aos-delay="200">
+                    <div class="text-center">
+                        <div class="feature-icon mb-3 mx-auto">
+                            <i class="bi bi-envelope"></i>
+                        </div>
+                        <h4 class="mb-3">Email Us</h4>
+                        <p class="mb-0">
+                            info@ewings.lk<br>
+                            support@ewings-papers.lk
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="col-md-4" data-aos="fade-up" data-aos-delay="300">
+                    <div class="text-center">
+                        <div class="feature-icon mb-3 mx-auto">
+                            <i class="bi bi-telephone"></i>
+                        </div>
+                        <h4 class="mb-3">Call Us</h4>
+                        <p class="mb-0">
+                            +94 000 000 000<br>
+                            +94 000 000 000
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white py-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-4 footer-col text-center text-lg-start">
+                    <div class="footer-logo">
+                        <img src="EW-white.png" alt="eWings Papers" height="40">
+                    </div>
+                    <p>The ultimate platform for A/L Physics students to practice, compete, and achieve top results.</p>
+                    <div class="d-flex gap-3 mt-3 justify-content-center justify-content-lg-start social-icons" >
+                        <a href="#" class="text-white"><i class="bi bi-facebook fs-5"></i></a>
+                        <a href="#" class="text-white"><i class="bi bi-instagram fs-5"></i></a>
+                        <a href="#" class="text-white"><i class="bi bi-youtube fs-5"></i></a>
+                        <a href="#" class="text-white"><i class="bi bi-whatsapp fs-5"></i></a>
+                    </div>
+                </div>
+                
+                <div class="col-md-4 col-lg-2 footer-col footer-links">
+                    <h5>Quick Links</h5>
+                    <ul class="list-unstyled">
+                        <li class="mb-2"><a href="#" class="text-white-50">Home</a></li>
+                        <li class="mb-2"><a href="#features" class="text-white-50">Features</a></li>
+                        <li class="mb-2"><a href="#how-it-works" class="text-white-50">How It Works</a></li>
+                        <li class="mb-2"><a href="#contact" class="text-white-50">Contact</a></li>
+                    </ul>
+                </div>
+                
+                <div class="col-md-4 col-lg-3 footer-col footer-links">
+                    <h5>Resources</h5>
+                    <ul class="list-unstyled">
+                        <li class="mb-2"><a href="https://ewings.lk" target="_blank" class="text-white-50">Main LMS</a></li>
+                        <li class="mb-2"><a href="student-dashboard.html" class="text-white-50">Past Papers</a></li>
+                        <li class="mb-2"><a href="https://play.google.com/store/apps/details?id=lk.ewings.player&hl=en&pli=1" class="text-white-50">Study Guides</a></li>
+                        <li class="mb-2"><a href="https://ewings.lk/tutors?subject=Physics" class="text-white-50">Video Lessons</a></li>
+                        <li class="mb-2"><a href="faq.html" class="text-white-50">FAQ</a></li>
+                    </ul>
+                </div>
+                
+                <div class="col-md-4 col-lg-3 footer-col">
+                    <h5>Newsletter</h5>
+                    <p>Subscribe to get updates on new papers and features.</p>
+                    <form class="newsletter-form mb-3">
+                        <div class="input-group">
+                            <input type="email" class="form-control" placeholder="Your Email">
+                            <button class="btn btn-primary" type="submit">Subscribe</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <hr class="my-4 bg-secondary">
+            
+            <div class="text-center text-white-50">
+                <p class="mb-0">&copy; 2025 eWings Papers. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/swiper@9/swiper-bundle.min.js"></script>
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script>
+        // Initialize AOS (Animate On Scroll)
+        AOS.init({
+            duration: 800,
+            easing: 'ease-in-out',
+            once: true
+        });
+
+        // Initialize Banner Swiper
+        var bannerSwiper = new Swiper(".banner-slider", {
+            slidesPerView: 1,
+            spaceBetween: 0,
+            loop: true,
+            autoplay: {
+                delay: 5000,
+                disableOnInteraction: false,
+            },
+            pagination: {
+                el: ".banner-slider .swiper-pagination",
+                clickable: true,
+                dynamicBullets: true,
+            },
+            keyboard: {
+                enabled: true,
+            },
+            mousewheel: {
+                forceToAxis: true,
+            },
+            breakpoints: {
+                768: {
+                    autoHeight: false,
+                }
+            }
+        });
+
+        // Initialize Achievements Swiper
+        var achievementsSwiper = new Swiper(".mySwiper", {
+            slidesPerView: 1,
+            spaceBetween: 30,
+            pagination: {
+                el: ".swiper-pagination",
+                clickable: true,
+            },
+            breakpoints: {
+                640: {
+                    slidesPerView: 2,
+                },
+                992: {
+                    slidesPerView: 3,
+                },
+            }
+        });
+
+        // Navbar scroll effect
+        window.addEventListener('scroll', function() {
+            const navbar = document.querySelector('.navbar');
+            if (window.scrollY > 50) {
+                navbar.classList.add('scrolled');
+            } else {
+                navbar.classList.remove('scrolled');
+            }
+        });
+
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyD5SRZWB-QwMg7wmyTjcvHZqP-mEdlll_M",
+            authDomain: "paper-class-1ab19.firebaseapp.com",
+            databaseURL: "https://paper-class-1ab19-default-rtdb.firebaseio.com",
+            projectId: "paper-class-1ab19",
+            storageBucket: "paper-class-1ab19.firebasestorage.app",
+            messagingSenderId: "83634677566",
+            appId: "1:83634677566:web:fb4f7a1fd869c3e82e2e6f"
+        };
+
+        // Initialize Firebase
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const database = firebase.database();
+
+        // Function to load top students
+        async function loadTopStudents() {
+            try {
+                // Get current year (assuming the academic year matches calendar year)
+                const currentYear = new Date().getFullYear().toString();
+                
+                // Get the latest paper for the current year
+                const papersSnapshot = await database.ref('paperClassPapers').once('value');
+                const papers = papersSnapshot.val() || {};
+                
+                let latestPaperId = null;
+                let latestPaperTimestamp = 0;
+                
+                // Find the most recent paper for the current year
+                Object.entries(papers).forEach(([id, paper]) => {
+                    if (paper.year === currentYear) {
+                        const paperTimestamp = new Date(paper.closeTime).getTime();
+                        if (paperTimestamp > latestPaperTimestamp) {
+                            latestPaperTimestamp = paperTimestamp;
+                            latestPaperId = id;
+                        }
+                    }
+                });
+                
+                if (!latestPaperId) {
+                    document.getElementById('top-students-container').innerHTML = `
+                        <div class="col-12 text-center">
+                            <i class="bi bi-info-circle fs-1 text-muted"></i>
+                            <p class="mt-2">No papers available for the current year</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                // Get rankings for the latest paper
+                const rankingsSnapshot = await database.ref(`paperClassRankings/${latestPaperId}`).once('value');
+                const rankingsData = rankingsSnapshot.val();
+                
+                if (!rankingsData || !rankingsData.batches) {
+                    document.getElementById('top-students-container').innerHTML = `
+                        <div class="col-12 text-center">
+                            <i class="bi bi-info-circle fs-1 text-muted"></i>
+                            <p class="mt-2">No rankings available for the latest paper</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                // Combine all batches' scores
+                let allScores = [];
+                Object.values(rankingsData.batches).forEach(batch => {
+                    if (batch.published && batch.scores) {
+                        allScores = allScores.concat(Object.values(batch.scores));
+                    }
+                });
+                
+                // Sort by score (descending)
+                allScores.sort((a, b) => b.score - a.score);
+                
+                // Get top 3 students
+                const topStudents = allScores.slice(0, 3);
+                
+                // Display top students
+                if (topStudents.length > 0) {
+                    let html = '';
+                    
+                    topStudents.forEach((student, index) => {
+                        const rankClass = `rank-${index + 1}`;
+                        const medalIcon = index === 0 ? 'bi-trophy-fill' : 
+                                         index === 1 ? 'bi-award-fill' : 'bi-award';
+                        
+                        html += `
+                            <div class="col-md-4">
+                                <div class="student-card position-relative">
+                                    <div class="rank-badge ${rankClass}">
+                                        <i class="bi ${medalIcon}"></i>
+                                    </div>
+                                    <div class="card-body text-center p-4">
+                                        <div class="mb-3">
+                                            <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=random&size=100" 
+                                                 alt="${student.name}" class="rounded-circle" width="100" height="100">
+                                        </div>
+                                        <h4 class="mb-2">${student.name}</h4>
+                                        <p class="text-muted mb-2">${student.school || 'Unknown School'}</p>
+                                        <div class="d-flex justify-content-center gap-2">
+                                            <span class="badge bg-primary">Z Score: ${student.score}</span>
+                                            <span class="badge bg-secondary">Rank: ${index + 1}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    
+                    // Add a button to view all rankings
+                    html += `
+                        <div class="col-12 text-center mt-4">
+                            <a href="student-dashboard.html#paperClassRankings" class="btn btn-ewings-outline">
+                                <i class="bi bi-trophy me-1"></i> View All Rankings
+                            </a>
+                        </div>
+                    `;
+                    
+                    document.getElementById('top-students-container').innerHTML = html;
+                } else {
+                    document.getElementById('top-students-container').innerHTML = `
+                        <div class="col-12 text-center">
+                            <i class="bi bi-info-circle fs-1 text-muted"></i>
+                            <p class="mt-2">No students have completed the latest paper yet</p>
+                        </div>
+                    `;
+                }
+                
+            } catch (error) {
+                console.error('Error loading top students:', error);
+                document.getElementById('top-students-container').innerHTML = `
+                    <div class="col-12 text-center text-danger">
+                        <i class="bi bi-exclamation-triangle fs-1"></i>
+                        <p class="mt-2">Failed to load top students</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Function to load island rankers
+        async function loadIslandRankers() {
+            try {
+                // This would be hardcoded or fetched from a separate achievements database
+                const islandRankers = [
+                    {
+                        name: "Name",
+                        year: "2022",
+                        rank: "Island 1st",
+                        school: "Royal College, Colombo",
+                        score: "2.333"
+                    },
+                    {
+                        name: "Name",
+                        year: "2021",
+                        rank: "Island 2nd",
+                        school: "Visakha Vidyalaya, Colombo",
+                        score: "2.333"
+                    },
+                    {
+                        name: "Name",
+                        year: "2023",
+                        rank: "Island 3rd",
+                        school: "Ananda College, Colombo",
+                        score: "2.333"
+                    },
+                    {
+                        name: "Name",
+                        year: "2020",
+                        rank: "Island 1st",
+                        school: "Musaeus College, Colombo",
+                        score: "2.333"
+                    },
+                    {
+                        name: "Name",
+                        year: "2019",
+                        rank: "Island 2nd",
+                        school: "Dharmaraja College, Kandy",
+                        score: "2.333"
+                    }
+                ];
+                
+                let html = '';
+                
+                islandRankers.forEach(ranker => {
+                    html += `
+                        <div class="swiper-slide">
+                            <div class="achievement-card">
+                                <h4 class="mb-3">${ranker.name}</h4>
+                                <p class="text-muted mb-2">${ranker.school}</p>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>Year:</span>
+                                    <strong>${ranker.year}</strong>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>Rank:</span>
+                                    <strong class="text-success">${ranker.rank}</strong>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <span>Score:</span>
+                                    <strong>${ranker.score}</strong>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                document.getElementById('island-rankers-container').innerHTML = html;
+                
+                // Update Swiper after content is loaded
+                achievementsSwiper.update();
+                
+            } catch (error) {
+                console.error('Error loading island rankers:', error);
+                document.getElementById('island-rankers-container').innerHTML = `
+                    <div class="swiper-slide">
+                        <div class="text-danger">
+                            <i class="bi bi-exclamation-triangle fs-1"></i>
+                            <p>Failed to load rankers</p>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        // Load data when page is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            loadTopStudents();
+            loadIslandRankers();
+            
+            // Set up interval to refresh top students periodically
+            setInterval(loadTopStudents, 300000); // Refresh every 5 minutes
+        });
+
+        // Enhanced Video Player Functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const video = document.getElementById('ewings-video');
+            const playPauseBtn = document.querySelector('.play-pause');
+            const bigPlayBtn = document.querySelector('.big-play-btn');
+            const progressBar = document.querySelector('.progress-fill');
+            const progressContainer = document.querySelector('.progress-container');
+            const currentTimeDisplay = document.querySelector('.current-time');
+            const durationDisplay = document.querySelector('.duration');
+            const volumeBtn = document.querySelector('.volume-btn');
+            const volumeSlider = document.querySelector('.volume-slider input');
+            const fullscreenBtn = document.querySelector('.fullscreen-btn');
+            const speedBtn = document.querySelector('.speed-btn');
+            const chapterItems = document.querySelectorAll('.chapter-item');
+            const chaptersHeader = document.querySelector('.chapters-header');
+            const chaptersContainer = document.querySelector('.chapters-container');
+            const chapterMarkersContainer = document.querySelector('.chapter-markers');
+            const chapterTooltip = document.querySelector('.chapter-tooltip');
+            const videoControls = document.querySelector('.video-controls');
+            const videoContainer = document.querySelector('.video-container');
+            
+            // Create double-tap overlay elements for mobile
+            const leftTapOverlay = document.createElement('div');
+            leftTapOverlay.className = 'double-tap-overlay left';
+            leftTapOverlay.innerHTML = '<i class="bi bi-arrow-counterclockwise"></i>';
+            videoContainer.appendChild(leftTapOverlay);
+            
+            const rightTapOverlay = document.createElement('div');
+            rightTapOverlay.className = 'double-tap-overlay right';
+            rightTapOverlay.innerHTML = '<i class="bi bi-arrow-clockwise"></i>';
+            videoContainer.appendChild(rightTapOverlay);
+            
+            // Variables for controls auto-hide
+            let controlsHideTimeout;
+            let isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            let isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+            let controlsVisible = true; // Changed to true to always show controls
+            
+            // Playback speed options
+            const speedOptions = [0.5, 0.75, 1, 1.25, 1.5, 2];
+            let currentSpeedIndex = 2; // Default to 1x speed
+            
+            // Format time (seconds to MM:SS)
+function formatTime(seconds) {
+    if (isNaN(seconds)) return "0:00";
+    
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+}
+            
+            // Update progress bar
+function updateProgress() {
+    if (video.duration && !isNaN(video.currentTime)) {
+        const percent = (video.currentTime / video.duration) * 100;
+        progressBar.style.width = `${percent}%`;
+        currentTimeDisplay.textContent = formatTime(video.currentTime);
+    }
+}
+            
+            // Set video duration when metadata is loaded
+video.addEventListener('loadedmetadata', function() {
+    durationDisplay.textContent = formatTime(video.duration);
+    
+    // Clear existing markers
+    chapterMarkersContainer.innerHTML = '';
+    
+    // Add chapter markers to progress bar
+    chapterItems.forEach(item => {
+        const startTime = parseInt(item.getAttribute('data-start'));
+        if (!isNaN(startTime)) { // Ensure it's a valid number
+            const percent = (startTime / video.duration) * 100;
+            const marker = document.createElement('div');
+            marker.className = 'chapter-marker';
+            marker.style.left = `${percent}%`;
+            marker.setAttribute('data-time', startTime);
+            marker.setAttribute('data-title', item.getAttribute('data-title'));
+            
+            // Show tooltip on hover
+            marker.addEventListener('mouseenter', function() {
+                const rect = this.getBoundingClientRect();
+                const progressRect = progressContainer.getBoundingClientRect();
+                const tooltipX = rect.left - progressRect.left + (rect.width / 2);
+                
+                chapterTooltip.textContent = this.getAttribute('data-title');
+                chapterTooltip.style.left = `${(tooltipX / progressRect.width) * 100}%`;
+                chapterTooltip.style.opacity = '1';
+            });
+            
+            marker.addEventListener('mouseleave', function() {
+                chapterTooltip.style.opacity = '0';
+            });
+            
+            // Click to seek to chapter
+            marker.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const time = parseInt(this.getAttribute('data-time'));
+                if (!isNaN(time)) {
+                    video.currentTime = time;
+                }
+            });
+            
+            chapterMarkersContainer.appendChild(marker);
+        }
+    });
+});
+            
+            // Play/Pause functionality
+            function togglePlayPause() {
+                if (video.paused) {
+                    const playPromise = video.play();
+                    
+                    if (playPromise !== undefined) {
+                        playPromise.then(_ => {
+                            playPauseBtn.innerHTML = '<i class="bi bi-pause-fill"></i>';
+                            bigPlayBtn.classList.add('hidden');
+                            showControls();
+                            if (isMobile) {
+                                startControlsAutoHide();
+                            }
+                        }).catch(error => {
+                            console.error('Playback failed:', error);
+                        });
+                    }
+                } else {
+                    video.pause();
+                    playPauseBtn.innerHTML = '<i class="bi bi-play-fill"></i>';
+                    bigPlayBtn.classList.remove('hidden');
+                    if (isMobile) {
+                        clearTimeout(controlsHideTimeout);
+                    }
+                }
+            }
+            
+            // Click play/pause buttons
+            playPauseBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                togglePlayPause();
+            });
+            
+            bigPlayBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                togglePlayPause();
+            });
+            
+            // Video container click to play/pause
+            videoContainer.addEventListener('click', function(e) {
+                // Don't toggle if clicking on controls or big play button
+                if (e.target.closest('.video-controls') || e.target.closest('.big-play-btn')) {
+                    return;
+                }
+                togglePlayPause();
+            });
+            
+            // Progress bar interaction
+function handleProgressBarClick(e) {
+    if (video.duration) {
+        const rect = progressContainer.getBoundingClientRect();
+        const pos = (e.clientX - rect.left) / rect.width;
+        video.currentTime = pos * video.duration;
+    }
+}
+            
+            progressContainer.addEventListener('click', handleProgressBarClick);
+            
+            // Update progress as video plays
+            video.addEventListener('timeupdate', updateProgress);
+            
+            // Volume control
+            volumeBtn.addEventListener('click', function() {
+                video.muted = !video.muted;
+                updateVolumeIcon();
+            });
+            
+            volumeSlider.addEventListener('input', function() {
+                video.volume = this.value;
+                video.muted = false;
+                updateVolumeIcon();
+            });
+            
+            function updateVolumeIcon() {
+                if (video.muted || video.volume == 0) {
+                    volumeBtn.innerHTML = '<i class="bi bi-volume-mute"></i>';
+                    volumeSlider.value = 0;
+                } else if (video.volume < 0.5) {
+                    volumeBtn.innerHTML = '<i class="bi bi-volume-down"></i>';
+                    volumeSlider.value = video.volume;
+                } else {
+                    volumeBtn.innerHTML = '<i class="bi bi-volume-up"></i>';
+                    volumeSlider.value = video.volume;
+                }
+            }
+            
+            // Playback speed control
+            function changePlaybackSpeed() {
+                currentSpeedIndex = (currentSpeedIndex + 1) % speedOptions.length;
+                const newSpeed = speedOptions[currentSpeedIndex];
+                video.playbackRate = newSpeed;
+                speedBtn.textContent = `${newSpeed}x`;
+            }
+            
+            speedBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                changePlaybackSpeed();
+            });
+            
+            // Fullscreen control
+            function toggleFullscreen() {
+                if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+                    if (videoContainer.requestFullscreen) {
+                        videoContainer.requestFullscreen();
+                    } else if (videoContainer.webkitRequestFullscreen) {
+                        videoContainer.webkitRequestFullscreen();
+                    } else if (videoContainer.webkitEnterFullscreen) {
+                        video.webkitEnterFullscreen(); // iOS Safari
+                    }
+                    fullscreenBtn.innerHTML = '<i class="bi bi-fullscreen-exit"></i>';
+                } else {
+                    if (document.exitFullscreen) {
+                        document.exitFullscreen();
+                    } else if (document.webkitExitFullscreen) {
+                        document.webkitExitFullscreen();
+                    }
+                    fullscreenBtn.innerHTML = '<i class="bi bi-fullscreen"></i>';
+                }
+            }
+            
+            fullscreenBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                toggleFullscreen();
+            });
+            
+            document.addEventListener('fullscreenchange', handleFullscreenChange);
+            document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+            
+            function handleFullscreenChange() {
+                if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+                    fullscreenBtn.innerHTML = '<i class="bi bi-fullscreen"></i>';
+                } else {
+                    fullscreenBtn.innerHTML = '<i class="bi bi-fullscreen-exit"></i>';
+                    // Ensure controls are visible in fullscreen
+                    showControls();
+                    if (isMobile) {
+                        startControlsAutoHide();
+                    }
+                }
+            }
+            
+            // iOS specific fullscreen handling
+            if (isIOS) {
+                videoContainer.addEventListener('click', function() {
+                    if (video.webkitSupportsFullscreen) {
+                        if (video.webkitDisplayingFullscreen) {
+                            video.webkitExitFullscreen();
+                        } else {
+                            video.webkitEnterFullscreen();
+                        }
+                    }
+                });
+                
+                video.addEventListener('webkitbeginfullscreen', function() {
+                    showControls();
+                    if (isMobile) {
+                        startControlsAutoHide();
+                    }
+                });
+            }
+            
+            // Chapter navigation
+chapterItems.forEach(item => {
+    item.addEventListener('click', function() {
+        const startTime = parseInt(this.getAttribute('data-start'));
+        if (!isNaN(startTime)) {
+            video.currentTime = startTime;
+            if (video.paused) {
+                togglePlayPause();
+            }
+            
+            // Highlight active chapter
+            chapterItems.forEach(i => i.classList.remove('active'));
+            this.classList.add('active');
+        }
+    });
+});
+            
+            // Toggle chapters section
+            chaptersHeader.addEventListener('click', function() {
+                chaptersContainer.classList.toggle('collapsed');
+            });
+            
+            // Update active chapter as video plays
+            video.addEventListener('timeupdate', function() {
+                const currentTime = video.currentTime;
+                let activeChapter = null;
+                
+                chapterItems.forEach(item => {
+                    const startTime = parseInt(item.getAttribute('data-start'));
+                    item.classList.remove('active');
+                    
+                    // Find the last chapter that starts before current time
+                    if (currentTime >= startTime) {
+                        activeChapter = item;
+                    }
+                });
+                
+                if (activeChapter) {
+                    activeChapter.classList.add('active');
+                }
+            });
+            
+            // Touch controls for mobile
+            let touchStartX = 0;
+            let touchStartY = 0;
+            let touchEndX = 0;
+            let touchEndY = 0;
+            let lastTapTime = 0;
+            
+            videoContainer.addEventListener('touchstart', function(e) {
+                touchStartX = e.changedTouches[0].clientX;
+                touchStartY = e.changedTouches[0].clientY;
+                
+                // Show controls on touch
+                showControls();
+                startControlsAutoHide();
+                
+                // Prevent default to avoid scrolling
+                if (e.target === videoContainer) {
+                    e.preventDefault();
+                }
+            }, { passive: false });
+            
+            videoContainer.addEventListener('touchend', function(e) {
+                touchEndX = e.changedTouches[0].clientX;
+                touchEndY = e.changedTouches[0].clientY;
+                
+                const currentTime = new Date().getTime();
+                const tapLength = currentTime - lastTapTime;
+                
+                if (tapLength < 300 && tapLength > 0) {
+                    // Double tap detected
+                    const tapX = e.changedTouches[0].clientX;
+                    const containerWidth = videoContainer.offsetWidth;
+                    
+                    if (tapX < containerWidth / 2) {
+                        // Left side - seek backward
+                        video.currentTime = Math.max(0, video.currentTime - 10);
+                        showTapOverlay(leftTapOverlay, '-10s');
+                    } else {
+                        // Right side - seek forward
+                        video.currentTime = Math.min(video.duration, video.currentTime + 10);
+                        showTapOverlay(rightTapOverlay, '+10s');
+                    }
+                }
+                
+                lastTapTime = currentTime;
+                
+                // Check for swipe gestures
+                handleSwipeGesture();
+                
+                // Show controls
+                showControls();
+                startControlsAutoHide();
+                
+                // Prevent default to avoid scrolling
+                if (e.target === videoContainer) {
+                    e.preventDefault();
+                }
+            }, { passive: false });
+            
+            function handleSwipeGesture() {
+                const dx = touchEndX - touchStartX;
+                const dy = touchEndY - touchStartY;
+                
+                // Only consider horizontal swipes with minimal vertical movement
+                if (Math.abs(dx) > Math.abs(dy) && Math.abs(dy) < 50) {
+                    if (dx > 50) {
+                        // Swipe right - seek forward
+                        video.currentTime = Math.min(video.duration, video.currentTime + 10);
+                        showTapOverlay(rightTapOverlay, '+10s');
+                    } else if (dx < -50) {
+                        // Swipe left - seek backward
+                        video.currentTime = Math.max(0, video.currentTime - 10);
+                        showTapOverlay(leftTapOverlay, '-10s');
+                    }
+                }
+            }
+            
+            function showTapOverlay(element, text) {
+                element.innerHTML = text || element.innerHTML;
+                element.classList.add('show');
+                
+                setTimeout(() => {
+                    element.classList.remove('show');
+                }, 500);
+            }
+            
+            // Mobile controls auto-hide
+            function startControlsAutoHide() {
+                if (!isMobile) return;
+                
+                clearTimeout(controlsHideTimeout);
+                controlsHideTimeout = setTimeout(() => {
+                    if (!video.paused) {
+                        hideControls();
+                    }
+                }, 3000);
+            }
+            
+            function showControls() {
+                if (controlsVisible) return;
+                
+                videoControls.classList.add('visible');
+                controlsVisible = true;
+            }
+            
+            function hideControls() {
+                if (!controlsVisible) return;
+                
+                videoControls.classList.remove('visible');
+                controlsVisible = false;
+            }
+            
+            // Always show controls on mobile when video starts playing
+            video.addEventListener('play', function() {
+                showControls();
+                if (isMobile) {
+                    startControlsAutoHide();
+                }
+            });
+            
+            // Hide controls when video ends
+            video.addEventListener('ended', function() {
+                playPauseBtn.innerHTML = '<i class="bi bi-play-fill"></i>';
+                bigPlayBtn.classList.remove('hidden');
+                if (isMobile) {
+                    hideControls();
+                }
+            });
+            
+            // Handle video errors
+            video.addEventListener('error', function() {
+                console.error('Video error:', video.error);
+            });
+            
+            // Initialize volume
+            video.volume = volumeSlider.value;
+            updateVolumeIcon();
+            
+            // Initialize playback speed
+            video.playbackRate = speedOptions[currentSpeedIndex];
+            speedBtn.textContent = `${speedOptions[currentSpeedIndex]}x`;
+            
+            // Initialize controls for mobile
+            if (isMobile) {
+                // Make volume slider always visible on mobile
+                document.querySelector('.volume-slider').style.opacity = '1';
+                
+                // Show controls initially on mobile
+                showControls();
+            }
+        });
+
+        //===========================
+        //load rankings
+
+        // Function to load top students by year
+    async function loadTopStudentsByYear(year, containerId) {
+        try {
+            // Get rankings for the specified year
+            const rankingsSnapshot = await database.ref(`paperClassRankings`).once('value');
+            const allRankings = rankingsSnapshot.val() || {};
+            
+            // Filter papers for the requested year
+            const papersSnapshot = await database.ref('paperClassPapers').once('value');
+            const allPapers = papersSnapshot.val() || {};
+            
+            let papersForYear = [];
+            Object.entries(allPapers).forEach(([id, paper]) => {
+                if (paper.year === year.toString()) {
+                    papersForYear.push(id);
+                }
+            });
+            
+            if (papersForYear.length === 0) {
+                document.getElementById(containerId).innerHTML = `
+                    <div class="col-12 text-center">
+                        <i class="bi bi-info-circle fs-1 text-muted"></i>
+                        <p class="mt-2">No papers available for ${year}</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Combine all scores from papers in this year
+            let allScores = [];
+            papersForYear.forEach(paperId => {
+                if (allRankings[paperId] && allRankings[paperId].batches) {
+                    Object.values(allRankings[paperId].batches).forEach(batch => {
+                        if (batch.published && batch.scores) {
+                            // Add error handling for each student record
+                            Object.values(batch.scores).forEach(student => {
+                                try {
+                                    // Ensure student has required properties
+                                    if (student && student.name && typeof student.score !== 'undefined') {
+                                        allScores.push({
+                                            name: student.name,
+                                            school: getSchoolName(student),
+                                            score: parseFloat(student.score) || 0
+                                        });
+                                    }
+                                } catch (e) {
+                                    console.error('Error processing student record:', e);
+                                }
+                            });
+                        }
+                    });
+                }
+            });
+            
+            // Sort by score (descending) and get top 3
+            allScores.sort((a, b) => b.score - a.score);
+            const topStudents = allScores.slice(0, 3);
+            
+            // Display top students
+            if (topStudents.length > 0) {
+                let html = '';
+                
+                topStudents.forEach((student, index) => {
+                    const rankClass = `rank-${index + 1}`;
+                    const medalIcon = index === 0 ? 'bi-trophy-fill' : 
+                                     index === 1 ? 'bi-award-fill' : 'bi-award';
+                    
+                    html += `
+                        <div class="col-md-4">
+                            <div class="student-card position-relative">
+                                <div class="rank-badge ${rankClass}">
+                                    <i class="bi ${medalIcon}"></i>
+                                </div>
+                                <div class="card-body text-center p-4">
+                                    <div class="mb-3">
+                                        <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(student.name)}&background=random&size=100" 
+                                             alt="${student.name}" class="rounded-circle" width="100" height="100">
+                                    </div>
+                                    <h4 class="mb-2">${student.name}</h4>
+                                    <p class="text-muted mb-2">${getSchoolName(student)}</p>
+                                    <div class="d-flex justify-content-center gap-2">
+                                        <span class="badge bg-primary">Z Score: ${student.score.toFixed(2)}</span>
+                                        <span class="badge bg-secondary">Rank: ${index + 1}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                document.getElementById(containerId).innerHTML = html;
+            } else {
+                document.getElementById(containerId).innerHTML = `
+                    <div class="col-12 text-center">
+                        <i class="bi bi-info-circle fs-1 text-muted"></i>
+                        <p class="mt-2">No students have completed papers for ${year} yet</p>
+                    </div>
+                `;
+            }
+            
+        } catch (error) {
+            console.error(`Error loading ${year} rankings:`, error);
+            document.getElementById(containerId).innerHTML = `
+                <div class="col-12 text-center text-danger">
+                    <i class="bi bi-exclamation-triangle fs-1"></i>
+                    <p class="mt-2">Failed to load ${year} rankings</p>
+                    <small class="text-muted">Please try again later</small>
+                </div>
+            `;
+        }
+    }
+
+    // Load data when page is ready
+    document.addEventListener('DOMContentLoaded', function() {
+        // Make 2026 tab active by default
+        const defaultYear = 2026;
+        const defaultTab = document.getElementById(`${defaultYear}-tab`);
+        const defaultPane = document.getElementById(`year${defaultYear}`);
+        
+        if (defaultTab && defaultPane) {
+            defaultTab.classList.add('active');
+            defaultPane.classList.add('show', 'active');
+        }
+        
+        // Load data for all years
+        loadTopStudentsByYear(2025, 'top-students-2025');
+        loadTopStudentsByYear(defaultYear, 'top-students-2026');
+        loadTopStudentsByYear(2027, 'top-students-2027');
+        
+        // Set up interval to refresh data periodically
+        setInterval(() => {
+            const activeTab = document.querySelector('#yearTabs .nav-link.active');
+            if (activeTab) {
+                const year = activeTab.id.replace('-tab', '');
+                loadTopStudentsByYear(year, `top-students-${year}`);
+            }
+        }, 300000); // Refresh every 5 minutes
+    });
+
+    function getSchoolName(student) {
+        try {
+            return student.school || 'School not specified';
+        } catch (e) {
+            return 'School not available';
+        }
+    }
+    </script>
+</body>
+</html>
