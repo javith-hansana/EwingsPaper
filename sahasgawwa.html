@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Sahasgawwa 2025 - Final</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<!-- Firebase compat libs -->
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
+<style>
+:root{
+  --accent:#0b3b5a; --gold:#d4af37; --sky1:#7cc7ff; --sky2:#dff4ff; --ivory:#fffaf0;
+  --card-shadow: 0 12px 30px rgba(4,20,35,0.12);
+  --glass: rgba(255,255,255,0.95);
+}
+*{box-sizing:border-box;margin:0;padding:0;font-family:'Poppins',sans-serif}
+body{
+  background: linear-gradient(180deg,var(--sky1) 0%, #cfeeff 40%, var(--sky2) 100%);
+  color:var(--accent); -webkit-font-smoothing:antialiased;
+}
+
+/* motif */
+body::after{
+  content:""; position:fixed; inset:0; pointer-events:none; opacity:0.06;
+  background-image:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160"><g fill="%23d4af37"><circle cx="40" cy="36" r="6"/><path d="M20 80c10-8 28-10 40-10s30 2 40 10c-10 16-30 28-40 28s-30-12-40-28z"/></g></svg>');
+  background-repeat:repeat;
+}
+
+/* header */
+header{
+  position:fixed; left:0; right:0; top:0; z-index:1000;
+  display:flex;align-items:center;justify-content:space-between;padding:10px 18px;
+  background:linear-gradient(90deg, rgba(255,255,255,0.98), rgba(255,255,255,0.92));
+  border-bottom:1px solid rgba(10,25,40,0.06); box-shadow:0 6px 20px rgba(4,20,35,0.06);
+}
+.logo{display:flex;align-items:center;gap:12px}
+.logo-img{height:46px}
+nav{display:flex; align-items:center}
+nav ul{display:flex; gap:12px;list-style:none; align-items:center; transition:all .28s ease}
+nav a{color:var(--accent); text-decoration:none; font-weight:600; padding:8px 12px; border-radius:8px; transition:transform .18s ease, background .18s ease, color .18s}
+nav a:hover{transform:translateY(-3px); background:rgba(11,59,90,0.06)}
+.mobile-menu-btn{display:none;border:0;background:none;font-size:20px;color:var(--accent)}
+
+/* hero */
+.hero{height:84vh;padding-top:80px;display:flex;align-items:center;justify-content:center}
+.hero-wrap{max-width:980px;background:var(--glass); padding:28px;border-radius:16px;box-shadow:var(--card-shadow); text-align:center; transition:transform .35s}
+.hero-wrap:hover{transform:translateY(-6px)}
+.hero h1{font-size:3rem;color:var(--accent);margin-bottom:8px}
+.hero p{color:#12405a;opacity:.86}
+.cta{display:inline-block;margin-top:14px;padding:12px 22px;border-radius:999px;background:linear-gradient(90deg,var(--gold),#ffd66b);color:var(--accent);font-weight:700;transition:transform .18s}
+.cta:hover{transform:translateY(-3px)}
+
+/* section */
+section{padding:72px 18px}
+.section-title{text-align:center;margin-bottom:28px}
+.section-title h2{font-size:1.9rem;color:var(--accent);display:inline-block;padding-bottom:6px;border-bottom:3px solid rgba(11,59,90,0.06)}
+
+/* tabs */
+.tabs, .competitions-tabs{display:flex;gap:8px;justify-content:center;margin-bottom:16px;flex-wrap:wrap}
+.tab, .contest-tab{padding:8px 12px;border-radius:999px;border:1px solid rgba(11,59,90,0.06);background:transparent;font-weight:700;cursor:pointer;transition:all .18s}
+.tab:hover, .contest-tab:hover{transform:translateY(-4px)}
+.tab.active, .contest-tab.active{background:linear-gradient(90deg,#fff,#fff); box-shadow:0 12px 30px rgba(4,20,35,0.06)}
+
+/* committee */
+.committee-grid{display:grid; gap:16px; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); max-width:1200px;margin:0 auto; perspective:1200px}
+.member-card{background:linear-gradient(180deg,#fff,#fbfdff); padding:12px;border-radius:12px;text-align:center;box-shadow:var(--card-shadow); transition:transform .28s, box-shadow .28s; transform-style:preserve-3d;}
+.member-card:hover{transform:translateY(-8px) rotateX(3deg) rotateY(2deg)}
+.member-card img{width:78px;height:78px;border-radius:50%;object-fit:cover;margin:6px auto 8px;display:block}
+.member-card h3{font-size:1rem;color:var(--accent);margin-bottom:6px}
+
+/* winners */
+.winners-wrapper{max-width:1200px;margin:0 auto}
+.winners-grid{display:grid; gap:14px; grid-template-columns:repeat(auto-fill,minmax(220px,1fr))}
+.winner-card{background:linear-gradient(180deg,#fff,#fbfdff); padding:12px;border-radius:12px; text-align:center; box-shadow:var(--card-shadow); transition:transform .25s}
+.winner-card:hover{transform:translateY(-8px)}
+.winner-place{font-size:1.3rem;color:var(--gold); font-weight:800}
+
+/* creations/gallery */
+.creations-grid, .gallery-grid{display:grid; gap:16px; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); max-width:1200px;margin:0 auto}
+.media-card{height:220px;border-radius:12px;overflow:hidden;background:#fff;position:relative;box-shadow:var(--card-shadow);transition:transform .28s, box-shadow .28s; transform-style:preserve-3d;cursor:pointer}
+.media-card:hover{transform:translateY(-10px) rotateX(3deg) rotateY(2deg)}
+.media-card img, .media-card video{width:100%;height:100%;object-fit:cover;display:block}
+.like-badge{position:absolute;left:10px;top:10px;background:rgba(255,255,255,0.96);padding:6px 8px;border-radius:999px;display:flex;gap:8px;align-items:center;font-weight:700;color:var(--accent);box-shadow:0 8px 22px rgba(4,20,35,0.06);transition:transform .12s}
+.like-badge button{border:0;background:none;cursor:pointer;font-size:16px}
+.media-title{position:absolute;left:10px;bottom:10px;right:10px;color:#fff;font-weight:800;text-shadow:0 6px 18px rgba(0,0,0,0.5)}
+
+/* popup */
+.popup{position:fixed; inset:0; background:rgba(2,20,40,0.72); display:flex;align-items:center;justify-content:center; z-index:3000; opacity:0; pointer-events:none; transition:opacity .2s}
+.popup.active{opacity:1; pointer-events:auto}
+.popup-box{width:96%; max-width:1100px; max-height:90vh; background:linear-gradient(180deg,#fff,#fbfdff); border-radius:12px; overflow:hidden; display:flex; flex-direction:column; position:relative}
+.popup-media{flex:1; background:#021025; display:flex; align-items:center; justify-content:center; min-height:360px}
+.popup-media img, .popup-media video{max-width:100%; max-height:78vh; border-radius:6px}
+.popup-info{padding:14px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.popup-title{font-weight:800;color:var(--accent)}
+.popup-actions{display:flex;gap:12px;align-items:center}
+.close-btn{position:absolute;top:12px;right:12px;background:#fff;border:0;padding:8px;border-radius:999px;cursor:pointer;box-shadow:0 8px 18px rgba(4,20,35,0.06)}
+.nav-btn{position:absolute;top:50%;transform:translateY(-50%);border:0;background:rgba(255,255,255,0.95);padding:10px;border-radius:12px;cursor:pointer;box-shadow:0 12px 30px rgba(4,20,35,0.06)}
+.nav-prev{left:12px}.nav-next{right:12px}
+
+/* comments */
+.comments-section{max-width:900px;margin:0 auto}
+.comment-item{background:linear-gradient(180deg,#fff,#fbfdff);padding:12px;border-radius:12px;margin-bottom:10px; box-shadow:var(--card-shadow)}
+
+/* footer */
+footer{background:linear-gradient(90deg,var(--accent),#072936);color:var(--ivory);padding:24px 18px;text-align:center}
+
+/* transitions for nav items/buttons */
+nav a, .tab, .contest-tab, .cta, .view-creation-btn { transition: all .18s cubic-bezier(.2,.9,.3,1); }
+.view-creation-btn{padding:8px 10px;border-radius:8px;border:0;background:linear-gradient(90deg,var(--gold),#ffd66b);font-weight:800;cursor:pointer}
+
+/* responsive (many breakpoints for chrome devtools sizes) */
+@media (max-width:1366px){ .hero h1{font-size:2.8rem} }
+@media (max-width:1280px){ .hero h1{font-size:2.6rem} .media-card{height:200px} }
+@media (max-width:1024px){ .member-card img{width:72px;height:72px} .nav-btn{display:block} }
+@media (max-width:900px){
+  nav ul{display:none; position:absolute; left:12px; right:12px; top:66px; background:var(--glass); border-radius:10px; flex-direction:column; padding:12px; gap:8px; box-shadow:0 20px 60px rgba(4,20,35,0.08)}
+  nav ul.show{display:flex}
+  .mobile-menu-btn{display:block}
+  .creations-grid, .gallery-grid{grid-template-columns:repeat(2,1fr)}
+  .winners-grid{grid-template-columns:repeat(2,1fr)}
+}
+@media (max-width:768px){ .hero h1{font-size:2.2rem} .creations-grid,.gallery-grid{grid-template-columns:repeat(2,1fr)} }
+@media (max-width:600px){
+  .hero-wrap{padding:20px} .hero h1{font-size:1.8rem}
+  .creations-grid,.gallery-grid{grid-template-columns:repeat(2,1fr)}
+  .winners-grid{grid-template-columns:repeat(1,1fr)}
+  .nav-btn{display:none}
+}
+@media (max-width:412px){
+  nav ul{left:8px;right:8px;top:64px}
+  .media-card{height:160px}
+}
+@media (max-width:375px){
+  .media-card{height:150px}
+  .hero h1{font-size:1.6rem}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <img class="logo-img" src="logo.png" alt="Sahasgawwa logo">
+  </div>
+
+  <button id="mobile-menu-btn" class="mobile-menu-btn" aria-expanded="false" aria-label="Open menu">
+    <i class="fas fa-bars"></i>
+  </button>
+
+  <nav>
+    <ul id="nav-menu">
+      <li><a href="#home">Home</a></li>
+      <li><a href="#about">About</a></li>
+      <li><a href="#committee">Committee</a></li>
+      <li><a href="#competitions-winners">Competitions</a></li>
+      <li><a href="#creations">Creations</a></li>
+      <li><a href="#gallery">Gallery</a></li>
+      <li><a href="#comments">Comments</a></li>
+      <li><a href="#contact">Contact</a></li>
+    </ul>
+  </nav>
+</header>
+
+<section class="hero" id="home">
+  <div class="hero-wrap">
+    <h1>Sahasgawwa 2025</h1>
+    <p>Where the Atlantic meets Sri Lankan Tradition — celebrate culture, creativity and community with us.</p>
+    <a class="cta" href="#about">Learn More</a>
+  </div>
+</section>
+
+<section id="about">
+  <div class="section-title"><h2>About Sahasgawwa</h2></div>
+  <div style="max-width:1100px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:center">
+    <div>
+      <h3 style="color:var(--accent)">A Cultural Confluence</h3>
+      <p style="color:#12314a;">Sahasgawwa 2025 blends coastal beauty with Sri Lankan tradition through music, art and competitions.</p>
+    </div>
+    <div><img src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1200&auto=format&fit=crop" alt="hero" style="width:100%;border-radius:10px;display:block"></div>
+  </div>
+</section>
+
+<section id="committee">
+  <div class="section-title"><h2>Committee</h2></div>
+
+  <div class="tabs" id="committee-tabs">
+    <button class="tab active" data-filter="all">All</button>
+    <button class="tab" data-filter="teachers">Teachers</button>
+    <button class="tab" data-filter="committee">Committee Members</button>
+  </div>
+
+  <div class="committee-grid" id="committee-grid"></div>
+</section>
+
+<section id="competitions-winners">
+  <div class="section-title"><h2>Competitions & Winners</h2></div>
+  <div class="competitions-tabs" id="competitions-tabs"></div>
+  <div class="winners-wrapper" id="winners-wrap"></div>
+</section>
+
+<section id="creations">
+  <div class="section-title"><h2>Creations</h2></div>
+  <div class="creations-grid" id="creations-container"></div>
+</section>
+
+<section id="gallery">
+  <div class="section-title"><h2>Gallery</h2></div>
+  <div class="gallery-grid" id="gallery-container"></div>
+</section>
+
+<section id="comments">
+  <div class="section-title"><h2>Comments</h2></div>
+  <div class="comments-section" style="max-width:900px;margin:0 auto">
+    <div id="comments-container"></div>
+    <div style="margin-top:12px;background:#fff;padding:12px;border-radius:10px">
+      <form id="comment-form">
+        <input id="comment-name" placeholder="Name (optional)" style="width:100%;padding:10px;margin-bottom:8px;border-radius:8px;border:1px solid rgba(0,0,0,0.06)">
+        <textarea id="comment-message" placeholder="Write your comment..." style="width:100%;min-height:90px;padding:10px;border-radius:8px;border:1px solid rgba(0,0,0,0.06)"></textarea>
+        <button class="cta" style="margin-top:8px">Submit Comment</button>
+      </form>
+    </div>
+  </div>
+</section>
+
+<section id="contact">
+  <div class="section-title"><h2>Contact</h2></div>
+  <div style="max-width:1100px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:16px">
+    <div style="background:#fff;padding:16px;border-radius:10px">
+      <strong>Office</strong>
+      <p style="color:#12314a">sahasgawwa@events.lk</p>
+    </div>
+    <div>
+      <form id="contact-form" style="background:#fff;padding:16px;border-radius:10px">
+        <input id="contact-name" placeholder="Your name" style="width:100%;padding:10px;margin-bottom:8px;border-radius:8px;border:1px solid rgba(0,0,0,0.06)">
+        <input id="contact-email" placeholder="Your email" style="width:100%;padding:10px;margin-bottom:8px;border-radius:8px;border:1px solid rgba(0,0,0,0.06)">
+        <textarea id="contact-message" placeholder="Message" style="width:100%;min-height:100px;padding:10px;border-radius:8px;border:1px solid rgba(0,0,0,0.06)"></textarea>
+        <button class="cta" type="submit" style="margin-top:8px">Send Message</button>
+      </form>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div style="max-width:1100px;margin:0 auto">
+    <div style="display:flex;gap:10px;align-items:center;justify-content:center;margin-bottom:8px">
+      <img src="logo.png" alt="logo" style="height:36px">
+      <div style="color:#fff;font-weight:700">Sahasgawwa 2025</div>
+    </div>
+    <p style="color:#e6eef7">Where tradition meets the sea — © 2025 Sahasgawwa</p>
+  </div>
+</footer>
+
+<!-- popup -->
+<div class="popup" id="popup">
+  <div class="popup-box" role="dialog" aria-modal="true">
+    <button class="close-btn" id="popup-close"><i class="fas fa-times"></i></button>
+    <button class="nav-btn nav-prev" id="popup-prev" aria-label="Previous"><i class="fas fa-chevron-left"></i></button>
+    <button class="nav-btn nav-next" id="popup-next" aria-label="Next"><i class="fas fa-chevron-right"></i></button>
+
+    <div class="popup-media" id="popup-media"></div>
+    <div class="popup-info">
+      <div>
+        <div class="popup-title" id="popup-title"></div>
+        <div style="color:#5a6b78" id="popup-desc"></div>
+      </div>
+      <div class="popup-actions">
+        <div style="display:flex;align-items:center;gap:8px">
+          <button id="popup-like-btn" style="border:0;background:linear-gradient(90deg,var(--gold),#ffd66b);padding:8px;border-radius:999px;cursor:pointer"><i class="far fa-heart"></i></button>
+          <div id="popup-like-count" style="font-weight:800;color:var(--accent)">0</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* IMPORTANT: correct databaseURL ensures Realtime DB client connects to the correct regional endpoint */
+const firebaseConfig = {
+  apiKey: "AIzaSyA_trksm5JBNwyQFGMljBIU2JUxB_87u8c",
+  authDomain: "sahasgawwa-1a99d.firebaseapp.com",
+  projectId: "sahasgawwa-1a99d",
+  storageBucket: "sahasgawwa-1a99d.firebasestorage.app",
+  messagingSenderId: "955108109669",
+  appId: "1:955108109669:web:568ba200b3da1d0bcc058c",
+  databaseURL: "https://sahasgawwa-1a99d-default-rtdb.asia-southeast1.firebasedatabase.app"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const rdb = firebase.database();
+
+/* DOM refs */
+const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+const navMenu = document.getElementById('nav-menu');
+const committeeGrid = document.getElementById('committee-grid');
+const creationsContainer = document.getElementById('creations-container');
+const galleryContainer = document.getElementById('gallery-container');
+const commentsContainer = document.getElementById('comments-container');
+const commentForm = document.getElementById('comment-form');
+const contactForm = document.getElementById('contact-form');
+const competitionsTabs = document.getElementById('competitions-tabs');
+const winnersWrap = document.getElementById('winners-wrap');
+const popup = document.getElementById('popup');
+const popupMedia = document.getElementById('popup-media');
+const popupTitle = document.getElementById('popup-title');
+const popupDesc = document.getElementById('popup-desc');
+const popupClose = document.getElementById('popup-close');
+const popupPrev = document.getElementById('popup-prev');
+const popupNext = document.getElementById('popup-next');
+const popupLikeBtn = document.getElementById('popup-like-btn');
+const popupLikeCount = document.getElementById('popup-like-count');
+
+/* Mobile nav */
+mobileMenuBtn.addEventListener('click', () => {
+  const open = navMenu.classList.toggle('show');
+  mobileMenuBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+});
+navMenu.querySelectorAll('a').forEach(a => {
+  a.addEventListener('click', (e) => {
+    e.preventDefault();
+    const target = document.querySelector(a.getAttribute('href'));
+    if (target) window.scrollTo({ top: target.offsetTop - 72, behavior: 'smooth' });
+    navMenu.classList.remove('show');
+    mobileMenuBtn.setAttribute('aria-expanded','false');
+  });
+});
+
+/* helper */
+function el(tag, cls, html){ const d=document.createElement(tag); if(cls) d.className = cls; if(html) d.innerHTML = html; return d; }
+
+/* popup state */
+let currentList = [], currentIndex = 0, currentCollection = '';
+
+/* Committee loader */
+async function loadCommittee(){
+  try{
+    const snap = await db.collection('committee').get();
+    const arr = []; snap.forEach(d => arr.push({ id:d.id, ...d.data() }));
+    arr.forEach(i => { i._type = (i.type || i.role || '').toLowerCase(); if(!i._type) i._type='committee'; });
+    document.getElementById('committee-tabs').querySelectorAll('.tab').forEach(btn=>{
+      btn.addEventListener('click', ()=> {
+        document.getElementById('committee-tabs').querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+        btn.classList.add('active');
+        renderCommittee(arr, btn.getAttribute('data-filter'));
+      });
+    });
+    renderCommittee(arr, 'all');
+  }catch(e){ console.error('committee load err', e); committeeGrid.innerHTML = '<p>Unable to load committee</p>'; }
+}
+function renderCommittee(items, filter){
+  committeeGrid.innerHTML = '';
+  const filtered = items.filter(it => { if(filter==='all') return true; if(filter==='teachers') return it._type.includes('teacher'); if(filter==='committee') return it._type.includes('committee'); return true;});
+  if(!filtered.length){ committeeGrid.innerHTML = '<p style="text-align:center">No members</p>'; return; }
+  filtered.forEach(m=>{
+    const card = el('div','member-card');
+    const img = m.photo || m.avatar || 'https://cdn-icons-png.flaticon.com/512/219/219983.png';
+    card.innerHTML = `<img src="${img}" alt="${m.name||'Member'}"><h3>${m.name||'Unnamed'}</h3><p style="color:#5a6b78">${m.position||m.role||''}</p>`;
+    card.addEventListener('pointermove', e => {
+      const r = card.getBoundingClientRect();
+      const px = (e.clientX - r.left)/r.width; const py = (e.clientY - r.top)/r.height;
+      const rx = (py - 0.5) * 8; const ry = (px - 0.5) * 8;
+      card.style.transform = `translateY(-6px) rotateX(${rx}deg) rotateY(${ry}deg)`;
+    });
+    card.addEventListener('pointerleave', ()=> card.style.transform = '');
+    committeeGrid.appendChild(card);
+  });
+}
+
+/* Competitions & Winners (use competitions collection, winners linked by competitionId and grouped by category array inside competition doc) */
+async function loadCompetitionsAndWinners(){
+  try{
+    const compsSnap = await db.collection('competitions').orderBy('name').get();
+    const competitions = []; compsSnap.forEach(d=>competitions.push({ id:d.id, ...d.data() }));
+    const winnersSnap = await db.collection('winners').get();
+    const winners = []; winnersSnap.forEach(d=>winners.push({ id:d.id, ...d.data() }));
+
+    competitionsTabs.innerHTML = '';
+    if(competitions.length === 0){
+      // fallback: derive competitions from winners
+      const derived = [...new Set(winners.map(w => w.competition || 'General'))];
+      derived.forEach((name, idx) => {
+        const btn = el('button','contest-tab', name); if(idx===0) btn.classList.add('active');
+        btn.addEventListener('click', ()=> { competitionsTabs.querySelectorAll('.contest-tab').forEach(t=>t.classList.remove('active')); btn.classList.add('active'); renderWinnersFallback(winners, name); });
+        competitionsTabs.appendChild(btn);
+      });
+      renderWinnersFallback(winners, derived[0] || 'General'); return;
+    }
+
+    competitions.forEach((c, idx) => {
+      const btn = el('button','contest-tab', c.name || `Competition ${idx+1}`); if(idx===0) btn.classList.add('active');
+      btn.addEventListener('click', ()=> { competitionsTabs.querySelectorAll('.contest-tab').forEach(t=>t.classList.remove('active')); btn.classList.add('active'); renderWinnersForCompetition(competitions, winners, c.id); });
+      competitionsTabs.appendChild(btn);
+    });
+
+    // default render first
+    renderWinnersForCompetition(competitions, winners, competitions[0].id);
+
+  }catch(e){ console.error('competitions/winners err', e); winnersWrap.innerHTML = '<p>Error loading competitions/winners</p>'; }
+}
+
+function renderWinnersForCompetition(competitions, winners, competitionId){
+  winnersWrap.innerHTML = '';
+  const comp = competitions.find(c=>c.id===competitionId) || {};
+  const compName = comp.name || 'Competition';
+  let categories = Array.isArray(comp.categories) && comp.categories.length ? comp.categories.slice() : [...new Set(winners.filter(w=>w.competitionId===competitionId).map(w=>w.category||'General'))];
+  if(categories.length===0) categories = ['General'];
+  winnersWrap.appendChild(el('h3','', compName));
+
+  categories.forEach(cat => {
+    winnersWrap.appendChild(Object.assign(el('h4','',cat), { style: 'margin:12px 0 8px' }));
+    const grid = el('div','winners-grid');
+    const items = winners.filter(w => (w.competitionId===competitionId) && ((w.category||'General')===cat));
+    if(items.length===0) grid.appendChild(el('div','','<div style="padding:12px;color:#5a6b78">No winners in this category yet</div>'));
+    else items.forEach(w => {
+      const card = el('div','winner-card');
+      card.innerHTML = `<div class="winner-place">${w.place||''}</div><div style="font-weight:800;margin-top:8px">${w.name||''}</div><div style="color:#5a6b78;margin-top:6px">${w.school||''}</div>`;
+      if(w.creationId){ const b = el('button','view-creation-btn','View Creation'); b.addEventListener('click', ()=> viewCreation(w.creationId)); card.appendChild(b); }
+      grid.appendChild(card);
+    });
+    winnersWrap.appendChild(grid);
+  });
+}
+
+function renderWinnersFallback(winners, compKey){
+  winnersWrap.innerHTML = '';
+  winnersWrap.appendChild(el('h3','',compKey));
+  const cats = [...new Set(winners.filter(w=> (w.competition||w.category||'General')===compKey).map(w=>w.category||'General'))];
+  cats.forEach(cat=>{
+    winnersWrap.appendChild(Object.assign(el('h4','',cat), { style: 'margin:10px 0' }));
+    const grid = el('div','winners-grid');
+    winners.filter(w=> (w.competition||w.category||'General')===compKey && (w.category||'General')===cat).forEach(w=>{
+      const card = el('div','winner-card'); card.innerHTML = `<div class="winner-place">${w.place||''}</div><div style="font-weight:800;margin-top:8px">${w.name||''}</div>`; grid.appendChild(card);
+    });
+    winnersWrap.appendChild(grid);
+  });
+}
+
+/* Creations & Gallery with robust likes initialization and transaction handling */
+async function loadCreations(){
+  try{
+    const snap = await db.collection('creations').get();
+    const arr = []; snap.forEach(d=>arr.push({ id:d.id, ...d.data() }));
+    creationsContainer.innerHTML = '';
+    if(!arr.length) creationsContainer.innerHTML = '<p style="text-align:center">No creations yet</p>';
+    arr.forEach(item => {
+      const card = el('div','media-card');
+      const media = item.url || item.mediaUrl || item.imageUrl || '';
+      const isVideo = media && (media.includes('.mp4')||media.includes('.webm'));
+      card.innerHTML = isVideo? `<video src="${media}" muted loop></video>` : `<img src="${media}" alt="${item.title||''}">`;
+
+      const likeBadge = el('div','like-badge'); likeBadge.innerHTML = `<button aria-label="Like"><i class="far fa-heart"></i></button><span class="count">0</span>`;
+      card.appendChild(likeBadge);
+      card.appendChild(el('div','media-title', item.title || ''));
+
+      const path = `/likes/creations/${item.id}`;
+      // initialize to 0 if null, with error handling
+      rdb.ref(path).once('value').then(snap => { if(snap.val() === null) rdb.ref(path).set(0).catch(err => console.warn('rdb init set failed:', err)); })
+        .catch(err => console.warn('rdb once error:', err));
+
+      const countSpan = likeBadge.querySelector('.count');
+      rdb.ref(path).on('value', snap => { countSpan.textContent = snap.val() || 0; }, err => { console.warn('rdb on error (creations badge):', err); });
+
+      likeBadge.querySelector('button').addEventListener('click', ev => { ev.stopPropagation(); toggleLikeOnPath(path, likeBadge.querySelector('button')); });
+      card.addEventListener('click', e => { if(e.target.closest('.like-badge')) return; openPopup(arr, item.id, 'creations'); });
+
+      creationsContainer.appendChild(card);
+    });
+  }catch(e){ console.error('creations load err', e); creationsContainer.innerHTML = '<p>Unable to load creations</p>'; }
+}
+
+async function loadGallery(){
+  try{
+    const snap = await db.collection('gallery').get();
+    const arr = []; snap.forEach(d=>arr.push({ id:d.id, ...d.data() }));
+    galleryContainer.innerHTML = '';
+    if(!arr.length) galleryContainer.innerHTML = '<p style="text-align:center">No gallery items</p>';
+    arr.forEach(item => {
+      const card = el('div','media-card');
+      const media = item.url || item.imageUrl || item.mediaUrl || '';
+      const isVideo = media && (media.includes('.mp4')||media.includes('.webm'));
+      card.innerHTML = isVideo? `<video src="${media}" muted loop></video>` : `<img src="${media}" alt="${item.title||''}">`;
+
+      const likeBadge = el('div','like-badge'); likeBadge.innerHTML = `<button aria-label="Like"><i class="far fa-heart"></i></button><span class="count">0</span>`;
+      card.appendChild(likeBadge);
+      card.appendChild(el('div','media-title', item.title || ''));
+
+      const path = `/likes/gallery/${item.id}`;
+      rdb.ref(path).once('value').then(snap => { if(snap.val() === null) rdb.ref(path).set(0).catch(err => console.warn('rdb init set failed:', err)); })
+        .catch(err => console.warn('rdb once error:', err));
+      const countSpan = likeBadge.querySelector('.count');
+      rdb.ref(path).on('value', snap => { countSpan.textContent = snap.val() || 0; }, err => { console.warn('rdb on error (gallery badge):', err); });
+
+      likeBadge.querySelector('button').addEventListener('click', ev => { ev.stopPropagation(); toggleLikeOnPath(path, likeBadge.querySelector('button')); });
+      card.addEventListener('click', e => { if(e.target.closest('.like-badge')) return; openPopup(arr, item.id, 'gallery'); });
+
+      galleryContainer.appendChild(card);
+    });
+  }catch(e){ console.error('gallery load err', e); galleryContainer.innerHTML = '<p>Unable to load gallery</p>'; }
+}
+
+/* Comments & Contact (unchanged behavior) */
+async function loadComments(){
+  try{
+    const snap = await db.collection('comments').where('approved','==',true).orderBy('timestamp','desc').get();
+    commentsContainer.innerHTML = '';
+    if(snap.empty){ commentsContainer.innerHTML = '<p>No comments yet</p>'; return; }
+    snap.forEach(d => {
+      const c = { id:d.id, ...d.data() };
+      const card = el('div','comment-item');
+      const time = c.timestamp ? new Date(c.timestamp.toDate()).toLocaleString() : 'Recently';
+      card.innerHTML = `<div style="display:flex;justify-content:space-between"><strong>${c.name||'Anonymous'}</strong><small style="color:#5a6b78">${time}</small></div><div style="margin-top:8px">${c.message||''}</div>`;
+      commentsContainer.appendChild(card);
+    });
+  }catch(e){ console.error('comments load err', e); commentsContainer.innerHTML = '<p>Error loading comments</p>'; }
+}
+document.getElementById('comment-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const name = document.getElementById('comment-name').value || 'Anonymous';
+  const message = document.getElementById('comment-message').value || '';
+  if(!message.trim()) return alert('Please write a comment');
+  try{ await db.collection('comments').add({ name, message, approved:false, timestamp: firebase.firestore.FieldValue.serverTimestamp() }); alert('Submitted (awaiting moderation)'); e.target.reset(); loadComments(); }
+  catch(e){ console.error('comment submit err', e); alert('Unable to submit comment'); }
+});
+contactForm.addEventListener('submit', async e => {
+  e.preventDefault();
+  const name = document.getElementById('contact-name').value || '';
+  const email = document.getElementById('contact-email').value || '';
+  const message = document.getElementById('contact-message').value || '';
+  if(!message.trim()) return alert('Please write a message');
+  try{ await db.collection('contacts').add({ name, email, message, timestamp: firebase.firestore.FieldValue.serverTimestamp() }); alert('Message sent'); e.target.reset(); }
+  catch(e){ console.error('contact submit err', e); alert('Unable to send message'); }
+});
+
+/* Popup prev/next + realtime likes in popup */
+function openPopup(list, itemId, collection){
+  currentList = list; currentCollection = collection; currentIndex = list.findIndex(i => i.id === itemId); if(currentIndex < 0) currentIndex = 0;
+  updatePopup(); popup.classList.add('active'); document.body.style.overflow='hidden';
+}
+function closePopup(){
+  if(currentList[currentIndex]) rdb.ref(`/likes/${currentCollection}/${currentList[currentIndex].id}`).off();
+  popup.classList.remove('active'); document.body.style.overflow='auto';
+}
+function updatePopup(){
+  popupMedia.innerHTML = '';
+  if(!currentList.length) return;
+  const item = currentList[currentIndex];
+  const media = item.url || item.mediaUrl || item.imageUrl || item.media || '';
+  const isVideo = media && (media.includes('.mp4')||media.includes('.webm')||media.includes('.ogg'));
+  if(isVideo){ const v=document.createElement('video'); v.src=media; v.controls=true; v.autoplay=true; v.style.maxHeight='78vh'; popupMedia.appendChild(v); }
+  else { const img=document.createElement('img'); img.src = media; img.alt = item.title || ''; popupMedia.appendChild(img); }
+
+  popupTitle.textContent = item.title || item.name || '';
+  popupDesc.textContent = item.description || item.caption || '';
+
+  const path = `/likes/${currentCollection}/${item.id}`;
+  // ensure key exists
+  rdb.ref(path).once('value').then(snap => { if(snap.val() === null) rdb.ref(path).set(0).catch(err => console.warn('rdb set failed', err)); })
+    .catch(err => console.warn('rdb once err', err));
+  rdb.ref(path).off();
+  rdb.ref(path).on('value', snap => { popupLikeCount.textContent = snap.val() || 0; }, err => { console.warn('rdb on error (popup):', err); });
+  popupLikeBtn.onclick = () => toggleLikeOnPath(path, popupLikeBtn);
+}
+
+popupPrev.addEventListener('click', (e)=>{ e.stopPropagation(); navigatePopup(-1); });
+popupNext.addEventListener('click', (e)=>{ e.stopPropagation(); navigatePopup(1); });
+popupClose.addEventListener('click', closePopup);
+popup.addEventListener('click', (e)=>{ if(e.target === popup) closePopup(); });
+document.addEventListener('keydown', (e)=>{ if(!popup.classList.contains('active')) return; if(e.key==='Escape') closePopup(); if(e.key==='ArrowLeft') navigatePopup(-1); if(e.key==='ArrowRight') navigatePopup(1); });
+
+function navigatePopup(dir){
+  if(!currentList.length) return;
+  const prev = currentList[currentIndex]; if(prev) rdb.ref(`/likes/${currentCollection}/${prev.id}`).off();
+  currentIndex = (currentIndex + dir + currentList.length) % currentList.length;
+  updatePopup();
+}
+
+/* Likes helper: transaction + logging for debugging permission errors */
+async function toggleLikeOnPath(path, btn){
+  const key = `liked_${path.replace(/\//g,'_')}`;
+  const isLiked = localStorage.getItem(key) === 'true';
+  const delta = isLiked ? -1 : 1;
+  try{
+    await rdb.ref(path).transaction(current => { if(current === null) current = 0; const v = current + delta; return v < 0 ? 0 : v; }, (err, committed, snapshot) => {
+      if(err) {
+        console.error('Realtime DB transaction error:', err);
+        if(err && err.code) console.warn('rdb error code:', err.code);
+      } else if(!committed) {
+        console.warn('Realtime DB transaction not committed — likely permission denied or conflict.');
+      } else {
+        // success
+        localStorage.setItem(key, (!isLiked).toString());
+        if(btn){
+          const icon = btn.querySelector('i');
+          if(icon){ icon.classList.toggle('fas', !isLiked); icon.classList.toggle('far', isLiked); }
+        }
+      }
+    });
+  }catch(e){
+    console.error('toggleLikeOnPath caught error', e);
+  }
+}
+
+/* viewCreation used by winners' buttons */
+async function viewCreation(creationId){
+  try{
+    const doc = await db.collection('creations').doc(creationId).get();
+    if(!doc.exists) return alert('Creation not found');
+    const c = { id: doc.id, ...doc.data() };
+    openPopup([c], c.id, 'creations');
+  }catch(e){ console.error('view creation err', e); alert('Unable to load creation'); }
+}
+
+/* Init load */
+async function init(){
+  try{
+    await loadCommittee();
+    await loadCompetitionsAndWinners();
+    await loadCreations();
+    await loadGallery();
+    await loadComments();
+    console.info('Site initialized.');
+  }catch(e){ console.error('init error', e); }
+}
+document.addEventListener('DOMContentLoaded', init);
+
+/* Helpful console warnings for troubleshooting Realtime DB region/rules */
+rdb.ref('.info/connected').on('value', v => {
+  if(!v.val()){
+    // not connected - but don't spam
+    console.info('Realtime DB: not connected (this may be transient).');
+  }
+});
+console.info('Realtime DB URL used:', firebase.app().options.databaseURL);
+</script>
+</body>
+</html>
