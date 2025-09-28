@@ -147,6 +147,10 @@ nav a, .tab, .contest-tab, .cta, .view-creation-btn { transition: all .18s cubic
 @media (max-width:412px){
   .media-card{height:160px}
   .hero h1{font-size:1.8rem}
+  .aboutimage{display:none}
+  .abouttext{
+    grid-column: span 2;
+  }
 }
 </style>
 
@@ -306,7 +310,7 @@ nav a, .tab, .contest-tab, .cta, .view-creation-btn { transition: all .18s cubic
 <section id="about">
   <div class="section-title"><h2>About Sahasgawwa</h2></div>
   <div style="max-width:1100px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:center">
-    <div>
+    <div class="abouttext">
       <h3 style="color:var(--teal-1)">සහස්‍රයේ මීළග සමතික්‍රමණය</h3>
       <p style="color:var(--muted)">Sahas Gawwa’25 is a vibrant arts festival organized by the Sinhala Language and 
 Literary Unit of Royal College, Colombo. This event is held with the goal of 
@@ -330,7 +334,7 @@ Through Sahas Gawwa’25, we hope to ignite a deeper love for Sinhala, inspire
 young writers and artists, and remind everyone of the timeless value of our 
 language and traditions.</p>
     </div>
-    <div><img src="Logo.png" alt="hero" style="width:100%;border-radius:10px;display:block"></div>
+    <div class="aboutimage"><img src="Logo.png"  alt="hero" style="width:100%;border-radius:10px;display:block"></div>
   </div>
 </section>
 
